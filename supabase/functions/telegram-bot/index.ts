@@ -17,11 +17,11 @@ serve(async (req) => {
 
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
         const payload = await req.json()
-        console.log("Payload ricevuto:", JSON.stringify(payload));
+        console.log("PAYLOAD RICEVUTO:", JSON.stringify(payload));
 
-        // Verifica che sia un messaggio di testo
         const message = payload.message
         if (!message || !message.text) {
+            console.log("Messaggio non valido o non testuale.");
             return new Response('ok', { status: 200 })
         }
 
@@ -29,26 +29,36 @@ serve(async (req) => {
         const fromId = message.from.id.toString()
         const text = message.text
 
+        console.log(`MESSAGGIO DA: ${fromId} | TESTO: ${text}`);
+
         // 1. Sicurezza: Verifica ID mittente
         if (fromId !== ALLOWED_TELEGRAM_ID) {
-            console.warn(`Accesso negato per ID Telegram: ${fromId}`)
+            console.warn(`ACCESSO NEGATO: Utente ${fromId} non autorizzato (Autorizzato: ${ALLOWED_TELEGRAM_ID})`);
             await sendTelegramMessage(chatId, "⚠️ Non sei autorizzato a usare questo bot.")
             return new Response('unauthorized', { status: 200 })
         }
 
+        console.log("Utente autorizzato. Eseguo comando...");
+
         // 2. Parsing Comandi
         if (text.startsWith('/news')) {
+            console.log("Comando: handleNews");
             await handleNews(supabase, chatId, text)
         } else if (text.startsWith('/avviso')) {
+            console.log("Comando: handleAlert");
             await handleAlert(supabase, chatId, text)
         } else if (text.startsWith('/evento')) {
+            console.log("Comando: handleEvent");
             await handleEvent(supabase, chatId, text)
         } else if (text === '/start') {
+            console.log("Comando: start");
             await sendTelegramMessage(chatId, "👋 Ciao! Sono il bot di Buongiorno Calitri.\n\nComandi disponibili:\n\n📰 /news Titolo | Excerpt | Contenuto | URL_Immagine | Data | Categoria | Autore\n\n⚠️ /avviso Messaggio\n\n📅 /evento Titolo | Data | Ora | Location | Descrizione | Categoria")
         } else {
+            console.log("Comando non riconosciuto.");
             await sendTelegramMessage(chatId, "❓ Comando non riconosciuto. Usa /start per aiuto.")
         }
 
+        console.log("Esecuzione completata con successo.");
         return new Response('ok', { status: 200 })
 
     } catch (error) {

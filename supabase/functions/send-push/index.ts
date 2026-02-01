@@ -18,16 +18,32 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 serve(async (req) => {
     try {
         const { type, title, body, url } = await req.json()
+        console.log(`Richiesta di invio push: tipo=${type}, titolo=${title}`);
 
-        // 1. Recupera tutte le sottoscrizioni che hanno attivato quel tipo di notifica
+        if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+            console.error("ERRORE: Chiavi VAPID mancanti nei segreti Supabase!");
+            return new Response(JSON.stringify({ error: 'VAPID keys not configured' }), { status: 500 })
+        }
+
+        // 1. Recupera tutte le sottoscrizioni
         const { data: subs, error } = await supabase
             .from('notification_subscriptions')
             .select('*')
 
-        if (error) throw error
+        if (error) {
+            console.error("Errore recupero sottoscrizioni:", error);
+            throw error
+        }
 
-        // Filtra in base alle preferenze (assumendo che preferences sia un JSONB)
-        const filteredSubs = subs.filter(sub => sub.preferences[type] === true)
+        console.log(`Trovate ${subs?.length || 0} sottoscrizioni totali.`);
+
+        // Filtra in base alle preferenze
+        const filteredSubs = (subs || []).filter(sub => {
+            const hasPref = sub.preferences && sub.preferences[type] === true;
+            return hasPref;
+        });
+
+        console.log(`Sottoscrizioni filtrate per tipo "${type}": ${filteredSubs.length}`);
 
         const notifications = filteredSubs.map(sub => {
             const pushSubscription = {
@@ -40,13 +56,16 @@ serve(async (req) => {
 
             return webpush.sendNotification(
                 pushSubscription,
-                JSON.stringify({ title, body, url })
-            ).catch(err => {
+                JSON.stringify({ title, body, url: url || '/' })
+            ).then(() => {
+                console.log(`Notifica inviata con successo a endpoint: ${sub.token.substring(0, 30)}...`);
+            }).catch(async (err) => {
                 if (err.statusCode === 410 || err.statusCode === 404) {
-                    // Rimuovi sottoscrizione scaduta
-                    return supabase.from('notification_subscriptions').delete().match({ token: sub.token })
+                    console.log(`Sottoscrizione scaduta/disattivata (410/404), rimozione: ${sub.token.substring(0, 30)}...`);
+                    await supabase.from('notification_subscriptions').delete().match({ token: sub.token })
+                } else {
+                    console.error('Errore invio push:', err);
                 }
-                console.error('Errore invio a', sub.token, err)
             })
         })
 
@@ -56,6 +75,7 @@ serve(async (req) => {
             headers: { 'Content-Type': 'application/json' },
         })
     } catch (err) {
+        console.error("Errore nella funzione send-push:", err.message);
         return new Response(JSON.stringify({ error: err.message }), {
             status: 400,
             headers: { 'Content-Type': 'application/json' },

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, X } from "lucide-react";
+import { Bell, X, ShieldCheck } from "lucide-react";
 import { subscribeUser, saveSubscriptionToSupabase, checkNotificationPermission } from "@/lib/notifications";
 
 export default function NotificationPrompt() {
@@ -9,22 +9,27 @@ export default function NotificationPrompt() {
     const [isRequesting, setIsRequesting] = useState(false);
 
     useEffect(() => {
-        // Controlla se abbiamo già chiesto il permesso
-        const hasAsked = localStorage.getItem("notification_prompt_shown");
-        const permission = checkNotificationPermission();
+        const checkVisibility = () => {
+            const hasAsked = localStorage.getItem("notification_prompt_shown");
+            const hasSeenGuide = localStorage.getItem("pwa_guide_seen");
+            const permission = checkNotificationPermission();
 
-        // Mostra il prompt solo se:
-        // 1. Non l'abbiamo mai mostrato prima
-        // 2. Il permesso non è stato né concesso né negato
-        // 3. Le notifiche sono supportate
-        if (!hasAsked && permission === "default") {
-            // Aspetta 3 secondi prima di mostrare il prompt (per non essere troppo invadenti)
-            const timer = setTimeout(() => {
+            // Mostra il prompt solo se:
+            // 1. Non l'abbiamo mai mostrato prima
+            // 2. Il permesso è ancora 'default'
+            // 3. L'utente ha già chiuso o confermato la guida all'installazione
+            if (!hasAsked && permission === "default" && hasSeenGuide) {
                 setShowPrompt(true);
-            }, 3000);
+            }
+        };
 
-            return () => clearTimeout(timer);
-        }
+        // Controlla ogni secondo se la guida è stata chiusa
+        const interval = setInterval(checkVisibility, 2000);
+
+        // Esegui anche un check immediato
+        checkVisibility();
+
+        return () => clearInterval(interval);
     }, []);
 
     const handleAllow = async () => {
@@ -74,76 +79,66 @@ export default function NotificationPrompt() {
     if (!showPrompt) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-end justify-center p-4 pointer-events-none">
-            <div className="w-full max-w-md pointer-events-auto animate-slideUp">
-                <div className="bg-white dark:bg-[#222222] rounded-2xl shadow-2xl border border-stone-200 dark:border-stone-700 overflow-hidden">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+            <div className="w-full max-w-sm animate-in zoom-in-95 duration-300">
+                <div className="bg-white dark:bg-[#1a1a1a] rounded-[32px] shadow-2xl overflow-hidden relative border border-stone-100 dark:border-stone-800">
                     {/* Header con icona */}
-                    <div className="bg-gradient-to-br from-calitri-azzurro to-blue-600 p-6 text-white relative">
+                    <div className="bg-gradient-to-br from-calitri-azzurro to-blue-600 p-8 text-white relative">
                         <button
                             onClick={handleDismiss}
-                            className="absolute top-4 right-4 p-1 rounded-full hover:bg-white/20 transition-colors"
+                            className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/20 transition-colors"
                         >
                             <X size={20} />
                         </button>
 
-                        <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                                <Bell size={28} />
+                        <div className="flex flex-col items-center text-center">
+                            <div className="w-20 h-20 rounded-3xl bg-white/20 backdrop-blur-md flex items-center justify-center mb-4 shadow-xl">
+                                <Bell size={40} strokeWidth={2.5} />
                             </div>
-                            <div>
-                                <h3 className="text-xl font-bold">Resta Aggiornato!</h3>
-                                <p className="text-sm text-white/90 mt-1">
-                                    Ricevi notifiche in tempo reale
-                                </p>
-                            </div>
+                            <h3 className="text-2xl font-black mb-1 leading-tight">Resta Aggiornato</h3>
+                            <p className="text-sm text-white/80 font-medium">
+                                Non perdere notizie e avvisi importanti
+                            </p>
                         </div>
                     </div>
 
                     {/* Contenuto */}
-                    <div className="p-6">
-                        <p className="text-stone-600 dark:text-stone-300 text-sm leading-relaxed mb-4">
-                            Attiva le notifiche per ricevere:
-                        </p>
-
-                        <ul className="space-y-2 mb-6">
-                            <li className="flex items-center gap-2 text-sm text-stone-700 dark:text-stone-200">
-                                <span className="w-1.5 h-1.5 rounded-full bg-calitri-azzurro"></span>
-                                <span>⚠️ <strong>Avvisi urgenti</strong> dalla community</span>
-                            </li>
-                            <li className="flex items-center gap-2 text-sm text-stone-700 dark:text-stone-200">
-                                <span className="w-1.5 h-1.5 rounded-full bg-calitri-green"></span>
-                                <span>📅 <strong>Eventi</strong> e appuntamenti</span>
-                            </li>
-                            <li className="flex items-center gap-2 text-sm text-stone-700 dark:text-stone-200">
-                                <span className="w-1.5 h-1.5 rounded-full bg-calitri-terra"></span>
-                                <span>📰 <strong>News</strong> e aggiornamenti</span>
-                            </li>
-                            <li className="flex items-center gap-2 text-sm text-stone-700 dark:text-stone-200">
-                                <span className="w-1.5 h-1.5 rounded-full bg-calitri-azzurro"></span>
-                                <span>🌤️ <strong>Meteo</strong> di domani ogni sera</span>
-                            </li>
-                        </ul>
+                    <div className="p-8">
+                        <div className="space-y-4 mb-8">
+                            <div className="flex items-start gap-3">
+                                <div className="mt-1 w-5 h-5 rounded-full bg-calitri-azzurro/10 flex items-center justify-center shrink-0">
+                                    <ShieldCheck size={14} className="text-calitri-azzurro" />
+                                </div>
+                                <p className="text-sm text-stone-600 dark:text-stone-300 font-medium">
+                                    Riceverai solo comunicazioni utili e avvisi meteo urgenti.
+                                </p>
+                            </div>
+                            <div className="flex items-start gap-3">
+                                <div className="mt-1 w-5 h-5 rounded-full bg-calitri-azzurro/10 flex items-center justify-center shrink-0">
+                                    <ShieldCheck size={14} className="text-calitri-azzurro" />
+                                </div>
+                                <p className="text-sm text-stone-600 dark:text-stone-300 font-medium">
+                                    Puoi disattivarle in ogni momento dalle impostazioni.
+                                </p>
+                            </div>
+                        </div>
 
                         {/* Pulsanti */}
-                        <div className="flex gap-3">
-                            <button
-                                onClick={handleDismiss}
-                                className="flex-1 px-4 py-3 rounded-xl border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 font-medium hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors"
-                            >
-                                Non ora
-                            </button>
+                        <div className="flex flex-col gap-3">
                             <button
                                 onClick={handleAllow}
                                 disabled={isRequesting}
-                                className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-calitri-azzurro to-blue-600 text-white font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full py-4 rounded-2xl bg-calitri-azzurro text-white font-black shadow-lg shadow-blue-500/20 active:scale-95 transition-all disabled:opacity-50"
                             >
-                                {isRequesting ? "Attivazione..." : "Attiva"}
+                                {isRequesting ? "ATTIVAZIONE..." : "ATTIVA ORA"}
+                            </button>
+                            <button
+                                onClick={handleDismiss}
+                                className="w-full py-2 text-stone-400 dark:text-stone-500 text-xs font-bold uppercase tracking-widest hover:text-stone-600 transition-colors"
+                            >
+                                Forse più tardi
                             </button>
                         </div>
-
-                        <p className="text-[10px] text-stone-400 dark:text-stone-500 text-center mt-3">
-                            Puoi modificare le tue preferenze in qualsiasi momento dalle Impostazioni
-                        </p>
                     </div>
                 </div>
             </div>
