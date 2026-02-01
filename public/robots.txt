@@ -1,0 +1,10 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Disallow admin/private areas
+Disallow: /api/
+Disallow: /supabase/
+
+# Sitemap
+Sitemap: https://buongiornocalitri.it/sitemap.xml
