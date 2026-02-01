@@ -70,24 +70,32 @@ NEXT_PUBLIC_GA_ID=your_google_analytics_id
 
 ## 📦 Deploy su Vercel
 
-### 1. Prepara il progetto
+### 1. Configura Segreti in Supabase
+
+Per far funzionare il bot e le notifiche push, devi impostare i segreti nel tuo progetto Supabase:
+
 ```bash
-# Testa la build production
-npm run build
-npm run start
+# Chiavi per le notifiche push
+supabase secrets set VAPID_PUBLIC_KEY=your_vapid_public_key
+supabase secrets set VAPID_PRIVATE_KEY=your_vapid_private_key
+
+# Chiavi per il bot Telegram
+supabase secrets set TELEGRAM_BOT_TOKEN=your_bot_token
+supabase secrets set ALLOWED_TELEGRAM_ID=your_telegram_id
 ```
 
-### 2. Deploy su Vercel
+### 2. Imposta il webhook Telegram
 
-1. Vai su [vercel.com](https://vercel.com) e importa il repository
-2. Configura le variabili d'ambiente (vedi sopra)
-3. Deploy!
+```bash
+# Sostituisci con i tuoi valori
+TELEGRAM_BOT_TOKEN="il_tuo_token"
+SUPABASE_FUNCTION_URL="https://your_project.supabase.co/functions/v1/telegram-bot"
 
-### 3. Configurazione Post-Deploy
-
-- Aggiorna l'URL nel file `sitemap.js` con il dominio finale
-- Configura il webhook Telegram per il bot
-- Verifica che le notifiche push funzionino
+# Imposta il webhook
+curl -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setWebhook" \
+  -H "Content-Type: application/json" \
+  -d "{\"url\": \"${SUPABASE_FUNCTION_URL}\"}"
+```
 
 ## 🤖 Telegram Bot
 

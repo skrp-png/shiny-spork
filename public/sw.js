@@ -6,8 +6,8 @@ self.addEventListener('push', (event) => {
         const data = event.data.json();
         const options = {
             body: data.body,
-            icon: '/icon-192x192.png', // Assicurati che questa icona esista
-            badge: '/icon-192x192.png',
+            icon: '/icon-192.png', // Icona corretta
+            badge: '/icon-192.png',
             data: {
                 url: data.url || '/'
             },

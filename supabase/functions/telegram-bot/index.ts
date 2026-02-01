@@ -73,6 +73,10 @@ async function handleNews(supabase, chatId, text) {
         console.error('News insert error:', error)
         return sendTelegramMessage(chatId, `❌ Errore: ${error.message}`)
     }
+
+    // Invia notifica push
+    await invokeSendPush(supabase, 'news', parts[0], parts[1])
+
     await sendTelegramMessage(chatId, "✅ News inserita con successo!")
 }
 
@@ -95,6 +99,10 @@ async function handleAlert(supabase, chatId, text) {
         console.error('Alert insert error:', error)
         return sendTelegramMessage(chatId, `❌ Errore: ${error.message}`)
     }
+
+    // Invia notifica push
+    await invokeSendPush(supabase, 'alerts', "⚠️ NUOVO AVVISO", message)
+
     await sendTelegramMessage(chatId, "✅ Avviso inserito con successo!")
 }
 
@@ -121,6 +129,10 @@ async function handleEvent(supabase, chatId, text) {
         console.error('Event insert error:', error)
         return sendTelegramMessage(chatId, `❌ Errore: ${error.message}`)
     }
+
+    // Invia notifica push
+    await invokeSendPush(supabase, 'events', `📅 ${parts[0]}`, `${parts[1]} alle ore ${parts[2]} @ ${parts[3]}`)
+
     await sendTelegramMessage(chatId, "✅ Evento inserito con successo!")
 }
 
@@ -131,4 +143,14 @@ async function sendTelegramMessage(chatId, text) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chat_id: chatId, text: text })
     })
+}
+
+async function invokeSendPush(supabase, type, title, body) {
+    try {
+        await supabase.functions.invoke('send-push', {
+            body: { type, title, body, url: '/' }
+        })
+    } catch (err) {
+        console.error('Error invoking send-push:', err)
+    }
 }

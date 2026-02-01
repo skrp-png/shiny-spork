@@ -12,6 +12,7 @@ import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import InstallGuide from "@/components/InstallGuide";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 import CookieBanner from "@/components/CookieBanner";
+import NotificationPrompt from "@/components/NotificationPrompt";
 
 export const viewport = {
   width: 'device-width',
@@ -96,6 +97,7 @@ export default function RootLayout({ children }) {
           <ServiceWorkerRegistration />
           <InstallGuide />
           <CookieBanner />
+          <NotificationPrompt />
           {children}
           <BottomNav />
         </ThemeProvider>
