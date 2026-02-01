@@ -25,7 +25,7 @@ export const viewport = {
 };
 
 export const metadata = {
-  metadataBase: new URL('https://buongiornocalitri.it'),
+  metadataBase: new URL('https://b-calitri.vercel.app/'),
   title: "Buongiorno Calitri",
   description: "La community App per Calitri - Meteo, Avvisi, Mercatino ed Eventi",
   manifest: "/manifest.json",
@@ -40,7 +40,7 @@ export const metadata = {
   openGraph: {
     type: 'website',
     locale: 'it_IT',
-    url: 'https://buongiornocalitri.it',
+    url: 'https://b-calitri.vercel.app/',
     siteName: 'Buongiorno Calitri',
     title: 'Buongiorno Calitri - La community App per Calitri',
     description: 'La community App per Calitri - Meteo, Avvisi, Mercatino ed Eventi',

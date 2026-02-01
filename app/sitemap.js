@@ -1,8 +1,7 @@
 import { MetadataRoute } from 'next'
 
 export default function sitemap() {
-    const baseUrl = 'https://buongiornocalitri.it'
-
+    const baseUrl = 'https://b-calitri.vercel.app'
     return [
         {
             url: baseUrl,
