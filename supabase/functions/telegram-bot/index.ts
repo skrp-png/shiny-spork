@@ -1,15 +1,23 @@
 import { serve } from "https://deno.land/std@0.131.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN')!
-const ALLOWED_TELEGRAM_ID = Deno.env.get('ALLOWED_TELEGRAM_ID')!
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN')
+const ALLOWED_TELEGRAM_ID = Deno.env.get('ALLOWED_TELEGRAM_ID')
 
 serve(async (req) => {
     try {
+        console.log("Richiesta ricevuta dal bot...");
+
+        if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !TELEGRAM_BOT_TOKEN || !ALLOWED_TELEGRAM_ID) {
+            console.error("ERRORE: Variabili d'ambiente mancanti!");
+            return new Response('config error', { status: 500 })
+        }
+
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
         const payload = await req.json()
+        console.log("Payload ricevuto:", JSON.stringify(payload));
 
         // Verifica che sia un messaggio di testo
         const message = payload.message
