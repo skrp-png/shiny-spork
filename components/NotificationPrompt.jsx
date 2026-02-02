@@ -10,6 +10,7 @@ export default function NotificationPrompt() {
 
     useEffect(() => {
         console.log("🔔 [NotificationPrompt] Avvio check visibilità...");
+        let syncAttempts = 0;
 
         const checkVisibility = async () => {
             try {
@@ -31,9 +32,10 @@ export default function NotificationPrompt() {
                     setShowPrompt(true);
                 }
 
-                // CASO 2: Se abbiamo già il permesso ma non siamo sicuri di essere nel DB, proviamo re-sync
-                if (permission === "granted" && !hasSubscribed) {
-                    console.log("🔔 [NotificationPrompt] Permesso già presente ma sottoscrizione mancante. Provo re-sync...");
+                // CASO 2: Re-sync se permesso presente ma sottoscrizione mancante (limite 3 tentativi)
+                if (permission === "granted" && !hasSubscribed && syncAttempts < 3) {
+                    syncAttempts++;
+                    console.log(`🔔 [NotificationPrompt] Re-sync tentativo ${syncAttempts}...`);
                     const subscription = await subscribeUser();
                     if (subscription) {
                         const savedPrefs = JSON.parse(localStorage.getItem("notification_prefs") || '{"weather":true,"alerts":true,"events":true,"news":true}');
@@ -42,15 +44,18 @@ export default function NotificationPrompt() {
                         console.log("🔔 [NotificationPrompt] Re-sync completato con successo.");
                     } else {
                         console.warn("🔔 [NotificationPrompt] Impossibile ottenere la sottoscrizione per il re-sync.");
+                        if (syncAttempts >= 3) {
+                            console.error("🔔 [NotificationPrompt] Troppi tentativi falliti. Smette di provare.");
+                        }
                     }
                 }
             } catch (err) {
-                console.error("🔔 [NotificationPrompt] Errore critico nel checkVisibility:", err);
+                console.error("🔔 [NotificationPrompt] Errore nel checkVisibility:", err);
             }
         };
 
-        // Controlla ogni 3 secondi (più lento per evitare spam ma coprire chi chiude la guida)
-        const interval = setInterval(checkVisibility, 3000);
+        // Controlla ogni 5 secondi
+        const interval = setInterval(checkVisibility, 5000);
         checkVisibility();
 
         return () => clearInterval(interval);
