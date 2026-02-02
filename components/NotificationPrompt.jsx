@@ -9,39 +9,48 @@ export default function NotificationPrompt() {
     const [isRequesting, setIsRequesting] = useState(false);
 
     useEffect(() => {
+        console.log("🔔 [NotificationPrompt] Avvio check visibilità...");
+
         const checkVisibility = async () => {
-            const hasAsked = localStorage.getItem("notification_prompt_shown");
-            const hasSeenGuide = localStorage.getItem("pwa_guide_seen");
-            const hasSubscribed = localStorage.getItem("notification_subscribed_v1"); // Nuovo flag per il re-sync
-            const permission = checkNotificationPermission();
+            try {
+                const hasAsked = localStorage.getItem("notification_prompt_shown");
+                const hasSeenGuide = localStorage.getItem("pwa_guide_seen");
+                const hasSubscribed = localStorage.getItem("notification_subscribed_v1");
+                const permission = checkNotificationPermission();
 
-            // CASO 1: Mostra il prompt se non chiesto e permission è default
-            if (!hasAsked && permission === "default" && hasSeenGuide) {
-                setShowPrompt(true);
-            }
+                console.log(`🔔 [NotificationPrompt] Stato attuale:`, {
+                    permission,
+                    hasAsked,
+                    hasSeenGuide,
+                    hasSubscribed
+                });
 
-            // CASO 2: Se abbiamo già il permesso ma non abbiamo il flag di sottoscrizione riuscita,
-            // proviamo a ri-sincronizzare silenziosamente per essere sicuri che l'utente sia nel DB.
-            if (permission === "granted" && !hasSubscribed && hasSeenGuide) {
-                console.log("Rilevato permesso concesso ma sottoscrizione mancante. Provo re-sync...");
-                try {
+                // CASO 1: Mostra il prompt se permission è default
+                if (!hasAsked && permission === "default" && hasSeenGuide) {
+                    console.log("🔔 [NotificationPrompt] Mostro il prompt delle notifiche.");
+                    setShowPrompt(true);
+                }
+
+                // CASO 2: Se abbiamo già il permesso ma non siamo sicuri di essere nel DB, proviamo re-sync
+                if (permission === "granted" && !hasSubscribed) {
+                    console.log("🔔 [NotificationPrompt] Permesso già presente ma sottoscrizione mancante. Provo re-sync...");
                     const subscription = await subscribeUser();
                     if (subscription) {
                         const savedPrefs = JSON.parse(localStorage.getItem("notification_prefs") || '{"weather":true,"alerts":true,"events":true,"news":true}');
                         await saveSubscriptionToSupabase(subscription, savedPrefs);
                         localStorage.setItem("notification_subscribed_v1", "true");
-                        console.log("Re-sync sottoscrizione completato con successo.");
+                        console.log("🔔 [NotificationPrompt] Re-sync completato con successo.");
+                    } else {
+                        console.warn("🔔 [NotificationPrompt] Impossibile ottenere la sottoscrizione per il re-sync.");
                     }
-                } catch (err) {
-                    console.error("Errore durante il re-sync silenzioso:", err);
                 }
+            } catch (err) {
+                console.error("🔔 [NotificationPrompt] Errore critico nel checkVisibility:", err);
             }
         };
 
-        // Controlla ogni secondo se la guida è stata chiusa
-        const interval = setInterval(checkVisibility, 2000);
-
-        // Esegui anche un check immediato
+        // Controlla ogni 3 secondi (più lento per evitare spam ma coprire chi chiude la guida)
+        const interval = setInterval(checkVisibility, 3000);
         checkVisibility();
 
         return () => clearInterval(interval);
@@ -49,37 +58,27 @@ export default function NotificationPrompt() {
 
     const handleAllow = async () => {
         setIsRequesting(true);
+        console.log("🔔 [NotificationPrompt] Utente ha cliccato ACCETTA");
 
         try {
-            // Richiedi il permesso
             const permission = await Notification.requestPermission();
+            console.log("🔔 [NotificationPrompt] Risultato richiesta permesso:", permission);
 
             if (permission === "granted") {
-                // Sottoscrivi l'utente alle notifiche
                 const subscription = await subscribeUser();
-
                 if (subscription) {
-                    // Salva la sottoscrizione su Supabase con tutte le preferenze attive di default
-                    const defaultPrefs = {
-                        weather: true,
-                        alerts: true,
-                        events: true,
-                        news: true
-                    };
-
+                    const defaultPrefs = { weather: true, alerts: true, events: true, news: true };
                     await saveSubscriptionToSupabase(subscription, defaultPrefs);
-
-                    // Salva le preferenze in localStorage e segna come completato
                     localStorage.setItem("notification_prefs", JSON.stringify(defaultPrefs));
                     localStorage.setItem("notification_subscribed_v1", "true");
+                    console.log("🔔 [NotificationPrompt] Sottoscrizione completata e salvata.");
                 }
             }
 
-            // Segna che abbiamo chiesto il permesso
             localStorage.setItem("notification_prompt_shown", "true");
             setShowPrompt(false);
         } catch (error) {
-            console.error("Errore durante la richiesta del permesso:", error);
+            console.error("🔔 [NotificationPrompt] Errore durante l'attivazione:", error);
             localStorage.setItem("notification_prompt_shown", "true");
             setShowPrompt(false);
         } finally {
@@ -88,6 +87,7 @@ export default function NotificationPrompt() {
     };
 
     const handleDismiss = () => {
+        console.log("🔔 [NotificationPrompt] Utente ha cliccato CHIUDI");
         localStorage.setItem("notification_prompt_shown", "true");
         setShowPrompt(false);
     };
@@ -98,60 +98,38 @@ export default function NotificationPrompt() {
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
             <div className="w-full max-w-sm animate-in zoom-in-95 duration-300">
                 <div className="bg-white dark:bg-[#1a1a1a] rounded-[32px] shadow-2xl overflow-hidden relative border border-stone-100 dark:border-stone-800">
-                    {/* Header con icona */}
                     <div className="bg-gradient-to-br from-calitri-azzurro to-blue-600 p-8 text-white relative">
-                        <button
-                            onClick={handleDismiss}
-                            className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/20 transition-colors"
-                        >
+                        <button onClick={handleDismiss} className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/20 transition-colors">
                             <X size={20} />
                         </button>
-
                         <div className="flex flex-col items-center text-center">
                             <div className="w-20 h-20 rounded-3xl bg-white/20 backdrop-blur-md flex items-center justify-center mb-4 shadow-xl">
                                 <Bell size={40} strokeWidth={2.5} />
                             </div>
                             <h3 className="text-2xl font-black mb-1 leading-tight">Resta Aggiornato</h3>
-                            <p className="text-sm text-white/80 font-medium">
-                                Non perdere notizie e avvisi importanti
-                            </p>
+                            <p className="text-sm text-white/80 font-medium">Non perdere notizie e avvisi importanti</p>
                         </div>
                     </div>
-
-                    {/* Contenuto */}
                     <div className="p-8">
                         <div className="space-y-4 mb-8">
                             <div className="flex items-start gap-3">
                                 <div className="mt-1 w-5 h-5 rounded-full bg-calitri-azzurro/10 flex items-center justify-center shrink-0">
                                     <ShieldCheck size={14} className="text-calitri-azzurro" />
                                 </div>
-                                <p className="text-sm text-stone-600 dark:text-stone-300 font-medium">
-                                    Riceverai solo comunicazioni utili e avvisi meteo urgenti.
-                                </p>
+                                <p className="text-sm text-stone-600 dark:text-stone-300 font-medium">Riceverai solo comunicazioni utili e avvisi meteo urgenti.</p>
                             </div>
                             <div className="flex items-start gap-3">
                                 <div className="mt-1 w-5 h-5 rounded-full bg-calitri-azzurro/10 flex items-center justify-center shrink-0">
                                     <ShieldCheck size={14} className="text-calitri-azzurro" />
                                 </div>
-                                <p className="text-sm text-stone-600 dark:text-stone-300 font-medium">
-                                    Puoi disattivarle in ogni momento dalle impostazioni.
-                                </p>
+                                <p className="text-sm text-stone-600 dark:text-stone-300 font-medium">Puoi disattivarle in ogni momento dalle impostazioni.</p>
                             </div>
                         </div>
-
-                        {/* Pulsanti */}
                         <div className="flex flex-col gap-3">
-                            <button
-                                onClick={handleAllow}
-                                disabled={isRequesting}
-                                className="w-full py-4 rounded-2xl bg-calitri-azzurro text-white font-black shadow-lg shadow-blue-500/20 active:scale-95 transition-all disabled:opacity-50"
-                            >
+                            <button onClick={handleAllow} disabled={isRequesting} className="w-full py-4 rounded-2xl bg-calitri-azzurro text-white font-black shadow-lg shadow-blue-500/20 active:scale-95 transition-all disabled:opacity-50">
                                 {isRequesting ? "ATTIVAZIONE..." : "ATTIVA ORA"}
                             </button>
-                            <button
-                                onClick={handleDismiss}
-                                className="w-full py-2 text-stone-400 dark:text-stone-500 text-xs font-bold uppercase tracking-widest hover:text-stone-600 transition-colors"
-                            >
+                            <button onClick={handleDismiss} className="w-full py-2 text-stone-400 dark:text-stone-500 text-xs font-bold uppercase tracking-widest hover:text-stone-600 transition-colors">
                                 Forse più tardi
                             </button>
                         </div>

@@ -1,9 +1,6 @@
 import { serve } from "https://deno.land/std@0.131.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -16,22 +13,39 @@ serve(async (req) => {
     }
 
     try {
+        const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
+        const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+        console.log('--- EDGE FUNCTION START: save-subscription ---');
+
+        if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+            console.error('ERRORE: Variabili Supabase mancanti!');
+            throw new Error('Supabase project configuration is missing.')
+        }
+
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-        // Get the request body
+        // Parsing body
         const body = await req.json()
         const { token, auth_key, p256dh_key, preferences } = body
 
-        console.log('--- NUOVA SOTTOSCRIZIONE RICEVUTA ---');
-        console.log('Payload:', JSON.stringify(body));
+        console.log('Payload ricevuto:', JSON.stringify({
+            token: token ? token.substring(0, 30) + '...' : 'NULL',
+            auth: !!auth_key,
+            p256: !!p256dh_key,
+            prefs: preferences
+        }));
 
         // Validate required fields
         if (!token || !auth_key || !p256dh_key) {
-            console.error('Campi mancanti:', { token: !!token, auth: !!auth_key, p256: !!p256dh_key });
-            throw new Error('Missing required fields')
+            console.error('ERRORE: Campi obbligatori mancanti!');
+            return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+                status: 400,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            })
         }
 
-        // Upsert subscription using Service Role (bypasses RLS)
+        // Upsert subscription
         const { data, error } = await supabase
             .from('notification_subscriptions')
             .upsert({
@@ -43,14 +57,14 @@ serve(async (req) => {
             }, { onConflict: 'token' })
 
         if (error) {
-            console.error('Errore Database:', error);
+            console.error('ERRORE DATABASE:', error.message);
             throw error
         }
 
-        console.log('Salvataggio riuscito per endpoint:', token.substring(0, 30) + '...');
+        console.log('Salvataggio riuscito!');
 
         return new Response(
-            JSON.stringify(data),
+            JSON.stringify({ success: true, message: 'Subscription saved' }),
             {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
                 status: 200
@@ -58,11 +72,12 @@ serve(async (req) => {
         )
 
     } catch (error) {
+        console.error('ERRORE CRITICO:', error.message);
         return new Response(
             JSON.stringify({ error: error.message }),
             {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                status: 400
+                status: 500
             }
         )
     }
