@@ -2,6 +2,7 @@
 
 import { X, Calendar, Clock, MapPin, Repeat, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { formatTime } from "@/lib/utils";
 
 export default function EventModal({ event, onClose }) {
     const [isVisible, setIsVisible] = useState(false);
@@ -53,7 +54,7 @@ export default function EventModal({ event, onClose }) {
 
     return (
         <div
-            className={`fixed inset-0 z-50 flex items-end md:items-center justify-center p-4 transition-all duration-300 ${isVisible ? 'bg-black/60 backdrop-blur-sm' : 'bg-black/0 pointer-events-none'}`}
+            className={`fixed inset-0 z-[1000] flex items-end md:items-center justify-center p-4 transition-all duration-300 ${isVisible ? 'bg-black/60 backdrop-blur-sm' : 'bg-black/0 pointer-events-none'}`}
             onClick={handleClose}
         >
             <div
@@ -107,7 +108,7 @@ export default function EventModal({ event, onClose }) {
                             </div>
                             <div>
                                 <p className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-0.5">Orario</p>
-                                <p className="text-stone-800 dark:text-stone-200 font-bold">{event.time}</p>
+                                <p className="text-stone-800 dark:text-stone-200 font-bold">{formatTime(event.time)}</p>
                             </div>
                         </div>
 
@@ -132,7 +133,7 @@ export default function EventModal({ event, onClose }) {
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 border-t border-stone-100 dark:border-stone-800 bg-stone-50/50 dark:bg-[#1a1a1a]">
+                <div className="p-6 pb-12 border-t border-stone-100 dark:border-stone-800 bg-stone-50/50 dark:bg-[#1a1a1a]">
                     <button
                         onClick={handleShare}
                         className="w-full py-3.5 bg-calitri-dark text-white rounded-xl font-bold text-sm shadow-lg shadow-calitri-dark/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"

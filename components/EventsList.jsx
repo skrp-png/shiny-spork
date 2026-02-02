@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { getEvents } from "@/lib/api";
 import { CalendarDays, MapPin, Clock, Repeat, ChevronDown, ChevronUp } from "lucide-react";
+import { formatTime } from "@/lib/utils";
 
 import EventModal from "@/components/EventModal";
 
@@ -85,7 +86,7 @@ export default function EventsList({ selectedDate }) {
                         <div className="flex items-center gap-3 text-xs text-stone-500 font-medium flex-wrap">
                             <span className="flex items-center gap-1">
                                 <Clock className="w-3.5 h-3.5 text-calitri-green" />
-                                {event.time}
+                                {formatTime(event.time)}
                             </span>
                             <span className="flex items-center gap-1">
                                 <MapPin className="w-3.5 h-3.5 text-calitri-dark dark:text-calitri-terra" />

@@ -249,7 +249,7 @@ export default function InteractiveMap() {
                         </div>
 
                         {/* Contenuto */}
-                        <div className="p-6">
+                        <div className="p-6 pb-12">
                             <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-100 mb-3">
                                 {selectedPOI.name}
                             </h2>

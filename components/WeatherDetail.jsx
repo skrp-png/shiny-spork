@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Wind, Droplets, Calendar, Clock, CloudRain } from "lucide-react";
+import { formatTime } from "@/lib/utils";
 
 const getIconUrl = (icon) => `https://openweathermap.org/img/wn/${icon}@4x.png`;
 
@@ -69,7 +70,7 @@ export default function WeatherDetail({ current, forecast }) {
                         {hourlyData.map((hour, idx) => (
                             <div key={idx} className="flex items-center justify-between bg-stone-50/50 dark:bg-stone-800/50 p-4 rounded-2xl border border-stone-100 dark:border-stone-700 hover:border-blue-200 transition-all group">
                                 <div className="flex items-center gap-4 w-24">
-                                    <span className="text-sm font-bold text-stone-500 dark:text-stone-300">{hour.time}</span>
+                                    <span className="text-sm font-bold text-stone-500 dark:text-stone-300">{formatTime(hour.time)}</span>
                                     <img src={getIconUrl(hour.icon)} className="w-10 h-10 -my-2" alt="" />
                                 </div>
 

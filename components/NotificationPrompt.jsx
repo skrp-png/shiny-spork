@@ -9,17 +9,32 @@ export default function NotificationPrompt() {
     const [isRequesting, setIsRequesting] = useState(false);
 
     useEffect(() => {
-        const checkVisibility = () => {
+        const checkVisibility = async () => {
             const hasAsked = localStorage.getItem("notification_prompt_shown");
             const hasSeenGuide = localStorage.getItem("pwa_guide_seen");
+            const hasSubscribed = localStorage.getItem("notification_subscribed_v1"); // Nuovo flag per il re-sync
             const permission = checkNotificationPermission();
 
-            // Mostra il prompt solo se:
-            // 1. Non l'abbiamo mai mostrato prima
-            // 2. Il permesso è ancora 'default'
-            // 3. L'utente ha già chiuso o confermato la guida all'installazione
+            // CASO 1: Mostra il prompt se non chiesto e permission è default
             if (!hasAsked && permission === "default" && hasSeenGuide) {
                 setShowPrompt(true);
+            }
+
+            // CASO 2: Se abbiamo già il permesso ma non abbiamo il flag di sottoscrizione riuscita,
+            // proviamo a ri-sincronizzare silenziosamente per essere sicuri che l'utente sia nel DB.
+            if (permission === "granted" && !hasSubscribed && hasSeenGuide) {
+                console.log("Rilevato permesso concesso ma sottoscrizione mancante. Provo re-sync...");
+                try {
+                    const subscription = await subscribeUser();
+                    if (subscription) {
+                        const savedPrefs = JSON.parse(localStorage.getItem("notification_prefs") || '{"weather":true,"alerts":true,"events":true,"news":true}');
+                        await saveSubscriptionToSupabase(subscription, savedPrefs);
+                        localStorage.setItem("notification_subscribed_v1", "true");
+                        console.log("Re-sync sottoscrizione completato con successo.");
+                    }
+                } catch (err) {
+                    console.error("Errore durante il re-sync silenzioso:", err);
+                }
             }
         };
 
@@ -54,8 +69,9 @@ export default function NotificationPrompt() {
 
                     await saveSubscriptionToSupabase(subscription, defaultPrefs);
 
-                    // Salva le preferenze in localStorage
+                    // Salva le preferenze in localStorage e segna come completato
                     localStorage.setItem("notification_prefs", JSON.stringify(defaultPrefs));
+                    localStorage.setItem("notification_subscribed_v1", "true");
                 }
             }
 

@@ -13,6 +13,7 @@ import InstallGuide from "@/components/InstallGuide";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 import CookieBanner from "@/components/CookieBanner";
 import NotificationPrompt from "@/components/NotificationPrompt";
+import DesktopRedirect from "@/components/DesktopRedirect";
 
 export const viewport = {
   width: 'device-width',
@@ -98,6 +99,7 @@ export default function RootLayout({ children }) {
           <InstallGuide />
           <CookieBanner />
           <NotificationPrompt />
+          <DesktopRedirect />
           {children}
           <BottomNav />
         </ThemeProvider>

@@ -19,10 +19,15 @@ serve(async (req) => {
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
         // Get the request body
-        const { token, auth_key, p256dh_key, preferences } = await req.json()
+        const body = await req.json()
+        const { token, auth_key, p256dh_key, preferences } = body
+
+        console.log('--- NUOVA SOTTOSCRIZIONE RICEVUTA ---');
+        console.log('Payload:', JSON.stringify(body));
 
         // Validate required fields
         if (!token || !auth_key || !p256dh_key) {
+            console.error('Campi mancanti:', { token: !!token, auth: !!auth_key, p256: !!p256dh_key });
             throw new Error('Missing required fields')
         }
 
@@ -37,7 +42,12 @@ serve(async (req) => {
                 last_updated: new Date().toISOString()
             }, { onConflict: 'token' })
 
-        if (error) throw error
+        if (error) {
+            console.error('Errore Database:', error);
+            throw error
+        }
+
+        console.log('Salvataggio riuscito per endpoint:', token.substring(0, 30) + '...');
 
         return new Response(
             JSON.stringify(data),

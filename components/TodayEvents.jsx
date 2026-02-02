@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { getEvents } from "@/lib/api";
 import { ArrowRight, MapPin } from "lucide-react";
+import { formatTime } from "@/lib/utils";
 import Link from "next/link";
 import EventModal from "@/components/EventModal";
 
@@ -63,7 +64,7 @@ export default function TodayEvents() {
                         <div className="flex justify-between items-start">
                             <div className="bg-white/10 p-2.5 rounded-xl text-center min-w-[3rem] backdrop-blur-sm">
                                 <span className="text-[10px] font-bold text-white/60 uppercase block">{dayLabel}</span>
-                                <span className="text-lg font-black text-white leading-none">{displayEvent.time}</span>
+                                <span className="text-lg font-black text-white leading-none">{formatTime(displayEvent.time)}</span>
                             </div>
                             <span className="px-2 py-0.5 bg-white/10 rounded-full text-[10px] font-bold text-white/80">
                                 {displayEvent.category}

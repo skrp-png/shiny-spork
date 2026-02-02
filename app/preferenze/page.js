@@ -271,6 +271,17 @@ export default function PreferenzePage() {
                             </div>
                             <ChevronRight size={18} className="text-stone-400" />
                         </Link>
+
+                        <Link href="/cookie" className="p-4 flex items-center gap-3 hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors cursor-pointer">
+                            <div className="w-10 h-10 rounded-full bg-stone-500/10 flex items-center justify-center text-stone-600 dark:text-stone-400">
+                                <FileText size={20} />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="font-bold text-stone-800 dark:text-stone-100">Cookie Policy</h3>
+                                <p className="text-xs text-stone-500 dark:text-stone-400">Gestisci i cookie</p>
+                            </div>
+                            <ChevronRight size={18} className="text-stone-400" />
+                        </Link>
                     </div>
                 </section>
 
@@ -279,7 +290,7 @@ export default function PreferenzePage() {
                     <h2 className="text-sm font-semibold text-stone-500 uppercase tracking-wider mb-3 ml-1">Supporto</h2>
                     <div className="bg-white dark:bg-[#222222] rounded-2xl overflow-hidden shadow-sm border border-stone-100 dark:border-stone-800 divide-y divide-stone-100 dark:divide-stone-800">
                         <a
-                            href="mailto:info@buongiornocalitri.it?subject=Feedback App Buongiorno Calitri"
+                            href="mailto:aleeasy@proton.me?subject=Feedback App Buongiorno Calitri"
                             className="w-full p-4 flex items-center gap-3 hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors text-left"
                         >
                             <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
