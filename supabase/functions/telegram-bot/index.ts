@@ -93,7 +93,7 @@ async function handleNews(supabase, chatId, text) {
     }
 
     // Invia notifica push
-    await invokeSendPush(supabase, 'news', parts[0], parts[1])
+    await invokeSendPush(supabase, 'news', parts[0], parts[1], '/news')
 
     await sendTelegramMessage(chatId, "✅ News inserita con successo!")
 }
@@ -119,7 +119,7 @@ async function handleAlert(supabase, chatId, text) {
     }
 
     // Invia notifica push
-    await invokeSendPush(supabase, 'alerts', "⚠️ NUOVO AVVISO", message)
+    await invokeSendPush(supabase, 'alerts', "⚠️ NUOVO AVVISO", message, '/')
 
     await sendTelegramMessage(chatId, "✅ Avviso inserito con successo!")
 }
@@ -149,7 +149,7 @@ async function handleEvent(supabase, chatId, text) {
     }
 
     // Invia notifica push
-    await invokeSendPush(supabase, 'events', `📅 ${parts[0]}`, `${parts[1]} alle ore ${parts[2]} @ ${parts[3]}`)
+    await invokeSendPush(supabase, 'events', `📅 ${parts[0]}`, `${parts[1]} alle ore ${parts[2]} @ ${parts[3]}`, '/eventi')
 
     await sendTelegramMessage(chatId, "✅ Evento inserito con successo!")
 }
@@ -163,10 +163,10 @@ async function sendTelegramMessage(chatId, text) {
     })
 }
 
-async function invokeSendPush(supabase, type, title, body) {
+async function invokeSendPush(supabase, type, title, body, url = '/') {
     try {
         await supabase.functions.invoke('send-push', {
-            body: { type, title, body, url: '/' }
+            body: { type, title, body, url }
         })
     } catch (err) {
         console.error('Error invoking send-push:', err)

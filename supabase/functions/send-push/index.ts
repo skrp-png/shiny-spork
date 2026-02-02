@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-import webpush from "https://esm.sh/web-push@3.6.7?target=deno"
+import webpush from "npm:web-push@3.6.7"
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -18,10 +18,8 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 serve(async (req) => {
     try {
         const { type, title, body, url } = await req.json()
-        console.log(`Richiesta di invio push: tipo=${type}, titolo=${title}`);
 
         if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
-            console.error("ERRORE: Chiavi VAPID mancanti nei segreti Supabase!");
             return new Response(JSON.stringify({ error: 'VAPID keys not configured' }), { status: 500 })
         }
 
@@ -35,15 +33,13 @@ serve(async (req) => {
             throw error
         }
 
-        console.log(`Trovate ${subs?.length || 0} sottoscrizioni totali.`);
-
         // Filtra in base alle preferenze
         const filteredSubs = (subs || []).filter(sub => {
             const hasPref = sub.preferences && sub.preferences[type] === true;
             return hasPref;
         });
 
-        console.log(`Sottoscrizioni filtrate per tipo "${type}": ${filteredSubs.length}`);
+        console.log(`Invio push "${title}" a ${filteredSubs.length} utenti (Filtro: ${type})`);
 
         const notifications = filteredSubs.map(sub => {
             const pushSubscription = {
@@ -57,11 +53,8 @@ serve(async (req) => {
             return webpush.sendNotification(
                 pushSubscription,
                 JSON.stringify({ title, body, url: url || '/' })
-            ).then(() => {
-                console.log(`Notifica inviata con successo a endpoint: ${sub.token.substring(0, 30)}...`);
-            }).catch(async (err) => {
+            ).catch(async (err) => {
                 if (err.statusCode === 410 || err.statusCode === 404) {
-                    console.log(`Sottoscrizione scaduta/disattivata (410/404), rimozione: ${sub.token.substring(0, 30)}...`);
                     await supabase.from('notification_subscriptions').delete().match({ token: sub.token })
                 } else {
                     console.error('Errore invio push:', err);
@@ -75,7 +68,7 @@ serve(async (req) => {
             headers: { 'Content-Type': 'application/json' },
         })
     } catch (err) {
-        console.error("Errore nella funzione send-push:", err.message);
+        console.error("Errore send-push:", err.message);
         return new Response(JSON.stringify({ error: err.message }), {
             status: 400,
             headers: { 'Content-Type': 'application/json' },

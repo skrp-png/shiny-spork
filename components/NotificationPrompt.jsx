@@ -9,7 +9,6 @@ export default function NotificationPrompt() {
     const [isRequesting, setIsRequesting] = useState(false);
 
     useEffect(() => {
-        console.log("🔔 [NotificationPrompt] Avvio check visibilità...");
         let syncAttempts = 0;
 
         const checkVisibility = async () => {
@@ -19,38 +18,27 @@ export default function NotificationPrompt() {
                 const hasSubscribed = localStorage.getItem("notification_subscribed_v1");
                 const permission = checkNotificationPermission();
 
-                console.log(`🔔 [NotificationPrompt] Stato attuale:`, {
-                    permission,
-                    hasAsked,
-                    hasSeenGuide,
-                    hasSubscribed
-                });
-
                 // CASO 1: Mostra il prompt se permission è default
                 if (!hasAsked && permission === "default" && hasSeenGuide) {
-                    console.log("🔔 [NotificationPrompt] Mostro il prompt delle notifiche.");
                     setShowPrompt(true);
                 }
 
                 // CASO 2: Re-sync se permesso presente ma sottoscrizione mancante (limite 3 tentativi)
                 if (permission === "granted" && !hasSubscribed && syncAttempts < 3) {
                     syncAttempts++;
-                    console.log(`🔔 [NotificationPrompt] Re-sync tentativo ${syncAttempts}...`);
                     const subscription = await subscribeUser();
                     if (subscription) {
                         const savedPrefs = JSON.parse(localStorage.getItem("notification_prefs") || '{"weather":true,"alerts":true,"events":true,"news":true}');
                         await saveSubscriptionToSupabase(subscription, savedPrefs);
                         localStorage.setItem("notification_subscribed_v1", "true");
-                        console.log("🔔 [NotificationPrompt] Re-sync completato con successo.");
                     } else {
-                        console.warn("🔔 [NotificationPrompt] Impossibile ottenere la sottoscrizione per il re-sync.");
                         if (syncAttempts >= 3) {
-                            console.error("🔔 [NotificationPrompt] Troppi tentativi falliti. Smette di provare.");
+                            console.error("Re-sync notifiche: troppi tentativi falliti.");
                         }
                     }
                 }
             } catch (err) {
-                console.error("🔔 [NotificationPrompt] Errore nel checkVisibility:", err);
+                console.error("Errore check notifiche:", err);
             }
         };
 
@@ -63,11 +51,9 @@ export default function NotificationPrompt() {
 
     const handleAllow = async () => {
         setIsRequesting(true);
-        console.log("🔔 [NotificationPrompt] Utente ha cliccato ACCETTA");
 
         try {
             const permission = await Notification.requestPermission();
-            console.log("🔔 [NotificationPrompt] Risultato richiesta permesso:", permission);
 
             if (permission === "granted") {
                 const subscription = await subscribeUser();
@@ -76,14 +62,13 @@ export default function NotificationPrompt() {
                     await saveSubscriptionToSupabase(subscription, defaultPrefs);
                     localStorage.setItem("notification_prefs", JSON.stringify(defaultPrefs));
                     localStorage.setItem("notification_subscribed_v1", "true");
-                    console.log("🔔 [NotificationPrompt] Sottoscrizione completata e salvata.");
                 }
             }
 
             localStorage.setItem("notification_prompt_shown", "true");
             setShowPrompt(false);
         } catch (error) {
-            console.error("🔔 [NotificationPrompt] Errore durante l'attivazione:", error);
+            console.error("Errore attivazione notifiche:", error);
             localStorage.setItem("notification_prompt_shown", "true");
             setShowPrompt(false);
         } finally {
@@ -92,7 +77,6 @@ export default function NotificationPrompt() {
     };
 
     const handleDismiss = () => {
-        console.log("🔔 [NotificationPrompt] Utente ha cliccato CHIUDI");
         localStorage.setItem("notification_prompt_shown", "true");
         setShowPrompt(false);
     };
