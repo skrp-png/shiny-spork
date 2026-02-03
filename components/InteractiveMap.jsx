@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { getPointsOfInterest, getRestaurants, getAccommodations, getServices } from "@/lib/api";
 import { MapPin, Navigation, X, ExternalLink, Map as MapIcon, Maximize, Minimize } from "lucide-react";
@@ -90,11 +90,9 @@ export default function InteractiveMap() {
 
     const categories = ["Tutti", "Monumenti", "Chiese", "Parchi", "Panorami", "Ristorazione", "Alloggi", "Servizi"];
 
-    const filteredPOIs = useMemo(() => {
-        return filter === "Tutti"
-            ? allPoints
-            : allPoints.filter(poi => poi.category === filter);
-    }, [filter]);
+    const filteredPOIs = filter === "Tutti"
+        ? allPoints
+        : allPoints.filter(poi => poi.category === filter);
 
     const openInMaps = (poi) => {
         const query = encodeURIComponent(`${poi.name || 'Calitri'} Calitri`);

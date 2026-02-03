@@ -222,7 +222,7 @@ export default function WhereToStay() {
                         </div>
 
                         {/* Contenuto */}
-                        <div className="p-6">
+                        <div className="p-6 pb-24">
                             <div className="flex items-start justify-between mb-3">
                                 <div>
                                     <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-100 mb-2">

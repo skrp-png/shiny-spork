@@ -15,7 +15,8 @@ export default function AltroPage() {
             icon: ShoppingBag,
             href: "/mercatino",
             color: "from-orange-500 to-red-600",
-            iconBg: "bg-orange-500/10 text-orange-600"
+            iconBg: "bg-orange-500/10 text-orange-600",
+            comingSoon: true
         },
         {
             title: "Dove Mangiare & Dormire",
