@@ -1,21 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { getServices } from "@/lib/api";
+import { useState } from "react";
+import { useServices } from "@/lib/queries";
 import { wasteCollection } from "@/data/mocks";
 import { Phone, MapPin, Clock, AlertCircle, Building2, Heart, Shield, Package, BookOpen, Trash2 } from "lucide-react";
 
 export default function ServicesWidget() {
-    const [services, setServices] = useState([]);
+    const { data: services = [] } = useServices();
     const [selectedCategory, setSelectedCategory] = useState("Tutti");
-
-    useEffect(() => {
-        const fetchServices = async () => {
-            const data = await getServices();
-            setServices(data);
-        };
-        fetchServices();
-    }, []);
 
     const categories = [
         { name: "Tutti", icon: Building2 },

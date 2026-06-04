@@ -1,23 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { AlertTriangle, CheckCircle } from "lucide-react";
-import { getAlerts } from "@/lib/api";
+import { useAlerts } from "@/lib/queries";
 import AlertHistoryModal from "./AlertHistoryModal";
 
 export default function AlertsWidget({ initialAlerts = [] }) {
-    const [alerts, setAlerts] = useState(initialAlerts);
+    const { data: alerts = [] } = useAlerts(initialAlerts);
     const [isModalOpen, setIsModalOpen] = useState(false);
-
-    useEffect(() => {
-        const fetchAlerts = async () => {
-            const data = await getAlerts();
-            setAlerts(data);
-        };
-        if (!initialAlerts || initialAlerts.length === 0) {
-            fetchAlerts();
-        }
-    }, [initialAlerts]);
 
     const hasAlerts = alerts && alerts.length > 0;
 

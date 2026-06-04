@@ -22,41 +22,35 @@ export default function NotificationPrompt() {
     }, [pathname]);
 
     useEffect(() => {
-        let syncAttempts = 0;
-
         const checkVisibility = async () => {
-            try {
-                const hasAsked = localStorage.getItem("notification_prompt_shown");
-                const hasSeenGuide = localStorage.getItem("pwa_guide_seen");
-                const hasSubscribed = localStorage.getItem("notification_subscribed_v1");
-                const permission = checkNotificationPermission();
-                const pageViews = parseInt(localStorage.getItem("app_page_views") || "0", 10);
+            const hasAsked = localStorage.getItem("notification_prompt_shown");
+            const hasSeenGuide = localStorage.getItem("pwa_guide_seen");
+            const hasSubscribed = localStorage.getItem("notification_subscribed_v1");
+            const syncAttempted = localStorage.getItem("sync_attempted_once_v1");
+            const permission = checkNotificationPermission();
+            const pageViews = parseInt(localStorage.getItem("app_page_views") || "0", 10);
 
-                // CASO 1: Mostra il prompt se permission è default, hasSeenGuide è vero e l'utente ha navigato un po'
-                if (!hasAsked && permission === "default" && hasSeenGuide && pageViews >= 3) {
-                    setShowPrompt(true);
-                }
+            // CASO 1: Mostra il prompt
+            if (!hasAsked && permission === "default" && hasSeenGuide && pageViews >= 3) {
+                setShowPrompt(true);
+            }
 
-                // CASO 2: Re-sync se permesso presente ma sottoscrizione mancante (limite 3 tentativi)
-                if (permission === "granted" && !hasSubscribed && syncAttempts < 3) {
-                    syncAttempts++;
+            // CASO 2: Re-sync una tantum (solo se già concesso e mai tentato)
+            if (permission === "granted" && !hasSubscribed && !syncAttempted) {
+                localStorage.setItem("sync_attempted_once_v1", "true");
+                try {
                     const subscription = await subscribeUser();
                     if (subscription) {
                         const savedPrefs = JSON.parse(localStorage.getItem("notification_prefs") || '{"weather":true,"alerts":true,"events":true,"news":true}');
                         await saveSubscriptionToSupabase(subscription, savedPrefs);
                         localStorage.setItem("notification_subscribed_v1", "true");
-                    } else {
-                        if (syncAttempts >= 3) {
-                            console.error("Re-sync notifiche: troppi tentativi falliti.");
-                        }
                     }
+                } catch (err) {
+                    console.error("Re-sync notifiche fallito:", err);
                 }
-            } catch (err) {
-                console.error("Errore check notifiche:", err);
             }
         };
 
-        // Controlla ogni 5 secondi
         const interval = setInterval(checkVisibility, 5000);
         checkVisibility();
 

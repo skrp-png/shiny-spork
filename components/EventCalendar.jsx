@@ -1,20 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ChevronLeft, ChevronRight, Calendar, MapPin, Clock } from "lucide-react";
-import { getEvents } from "@/lib/api";
+import { useEvents } from "@/lib/queries";
 
 export default function EventCalendar({ selectedDate, setSelectedDate }) {
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [events, setEvents] = useState([]);
-
-    useEffect(() => {
-        const fetchEvents = async () => {
-            const data = await getEvents();
-            setEvents(data);
-        };
-        fetchEvents();
-    }, []);
+    const { data: events = [] } = useEvents();
 
     const monthNames = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
         "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];

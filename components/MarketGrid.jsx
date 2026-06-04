@@ -1,35 +1,33 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { getMarketItems } from "@/lib/api";
+import { useState, useEffect, useMemo } from "react";
+import { useMarketItems } from "@/lib/queries";
 import { MessageCircle, Heart, Plus, Search } from "lucide-react";
 import AddItemModal from "./AddItemModal";
 
 export default function MarketGrid() {
-    const [items, setItems] = useState([]);
+    const { data: dbItems = [] } = useMarketItems();
+    const [localItems, setLocalItems] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("Tutti");
 
-    const categories = ["Tutti", "Cibo", "Mobili", "Altro"]; // Categorie fisse per semplicità o caricate dinamicamente
+    const categories = ["Tutti", "Cibo", "Mobili", "Altro"];
 
     useEffect(() => {
-        const fetchItems = async () => {
-            const data = await getMarketItems();
-
-            // Uniamo i dati da Supabase con quelli locali (se presenti nell'AddItemModal che usa localStorage)
-            const stored = localStorage.getItem("marketItems");
-            if (stored) {
-                const storedItems = JSON.parse(stored);
-                // Evitiamo duplicati se l'utente ha salvato cose in locale che sono ora su Supabase
-                const merged = [...storedItems, ...data.filter(di => !storedItems.find(si => si.id === di.id))];
-                setItems(merged);
-            } else {
-                setItems(data);
-            }
-        };
-        fetchItems();
+        const stored = localStorage.getItem("marketItems");
+        if (stored) {
+            setLocalItems(JSON.parse(stored));
+        }
     }, []);
+
+    const items = useMemo(() => {
+        if (localItems.length > 0) {
+            const merged = [...localItems, ...dbItems.filter(di => !localItems.find(si => si.id === di.id))];
+            return merged;
+        }
+        return dbItems;
+    }, [dbItems, localItems]);
 
     const filteredItems = items.filter(item => {
         const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -39,9 +37,9 @@ export default function MarketGrid() {
     });
 
     const handleAddItem = (newItem) => {
-        const updatedItems = [newItem, ...items];
-        setItems(updatedItems);
-        localStorage.setItem("marketItems", JSON.stringify(updatedItems));
+        const updated = [newItem, ...localItems];
+        setLocalItems(updated);
+        localStorage.setItem("marketItems", JSON.stringify(updated));
     };
 
     return (

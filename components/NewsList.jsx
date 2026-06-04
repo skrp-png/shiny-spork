@@ -1,22 +1,14 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { getNews } from "@/lib/api";
+import { useState, useRef, useEffect } from "react";
+import { useNews } from "@/lib/queries";
 import { Calendar, User, ArrowRight, X, Clock } from "lucide-react";
 
 export default function NewsList() {
-    const [news, setNews] = useState([]);
+    const { data: news = [] } = useNews();
     const [selectedNews, setSelectedNews] = useState(null);
     const [filter, setFilter] = useState("Tutte");
     const [scrollProgress, setScrollProgress] = useState(0);
-
-    useEffect(() => {
-        const fetchNews = async () => {
-            const data = await getNews();
-            setNews(data);
-        };
-        fetchNews();
-    }, []);
     const modalContentRef = useRef(null);
 
     const categories = ["Tutte", "Notizie", "Storia", "Tradizioni"];

@@ -1,59 +1,39 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { getEvents } from "@/lib/api";
+import { useMemo, useState } from "react";
+import { useEvents } from "@/lib/queries";
 import { ArrowRight, MapPin } from "lucide-react";
 import { formatTime } from "@/lib/utils";
-import Link from "next/link";
 import EventModal from "@/components/EventModal";
 
 export default function TodayEvents({ initialEvents = [] }) {
-    // Helper function to extract display event from raw events list
+    const { data: events = [] } = useEvents(initialEvents);
+    const [selectedEvent, setSelectedEvent] = useState(null);
+
     const getActiveEvent = (eventsList) => {
         if (!eventsList || eventsList.length === 0) return { event: null, isToday: false };
-
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-
-        // Trova eventi di oggi
         const todayEventsList = eventsList.filter(event => {
             const eventDate = new Date(event.date);
             eventDate.setHours(0, 0, 0, 0);
             return eventDate.getTime() === today.getTime();
         });
-
         if (todayEventsList.length > 0) {
             return { event: todayEventsList[0], isToday: true };
-        } else {
-            // Altrimenti il prossimo evento futuro
-            const upcoming = eventsList
-                .filter(event => new Date(event.date) >= today)
-                .sort((a, b) => new Date(a.date) - new Date(b.date));
-
-            if (upcoming.length > 0) {
-                return { event: upcoming[0], isToday: false };
-            }
+        }
+        const upcoming = eventsList
+            .filter(event => new Date(event.date) >= today)
+            .sort((a, b) => new Date(a.date) - new Date(b.date));
+        if (upcoming.length > 0) {
+            return { event: upcoming[0], isToday: false };
         }
         return { event: null, isToday: false };
     };
 
-    const initialActive = getActiveEvent(initialEvents);
-
-    const [displayEvent, setDisplayEvent] = useState(initialActive.event);
-    const [isToday, setIsToday] = useState(initialActive.isToday);
-    const [selectedEvent, setSelectedEvent] = useState(null);
-
-    useEffect(() => {
-        const fetchEvents = async () => {
-            const data = await getEvents();
-            const active = getActiveEvent(data);
-            setDisplayEvent(active.event);
-            setIsToday(active.isToday);
-        };
-        if (!initialEvents || initialEvents.length === 0) {
-            fetchEvents();
-        }
-    }, [initialEvents]);
+    const active = useMemo(() => getActiveEvent(events), [events]);
+    const displayEvent = active.event;
+    const isToday = active.isToday;
 
     if (!displayEvent) return (
         <div className="h-full min-h-[180px] rounded-3xl bg-calitri-dark/10 animate-pulse"></div>

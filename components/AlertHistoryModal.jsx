@@ -1,24 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { X, AlertTriangle, History, CheckCircle } from "lucide-react";
-import { getAlerts, getPastAlerts } from "@/lib/api";
+import { useAlerts, usePastAlerts } from "@/lib/queries";
 
 export default function AlertHistoryModal({ isOpen, onClose }) {
-    const [activeAlerts, setActiveAlerts] = useState([]);
-    const [historyAlerts, setHistoryAlerts] = useState([]);
-
-    useEffect(() => {
-        if (isOpen) {
-            const fetchData = async () => {
-                const active = await getAlerts();
-                const past = await getPastAlerts();
-                setActiveAlerts(active);
-                setHistoryAlerts(past);
-            };
-            fetchData();
-        }
-    }, [isOpen]);
+    const { data: activeAlerts = [] } = useAlerts();
+    const { data: historyAlerts = [] } = usePastAlerts();
 
     if (!isOpen) return null;
 

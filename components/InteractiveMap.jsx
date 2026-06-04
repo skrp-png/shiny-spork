@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { getPointsOfInterest, getRestaurants, getAccommodations, getServices } from "@/lib/api";
+import { usePointsOfInterest, useRestaurants, useAccommodations, useServices } from "@/lib/queries";
 import { MapPin, Navigation, X, ExternalLink, Map as MapIcon, Maximize, Minimize } from "lucide-react";
 
 // Import Map component dynamically to avoid SSR issues
@@ -19,23 +19,17 @@ const LeafletMap = dynamic(() => import("./LeafletMap"), {
 });
 
 export default function InteractiveMap() {
-    const [allPoints, setAllPoints] = useState([]);
+    const { data: pois = [] } = usePointsOfInterest();
+    const { data: rests = [] } = useRestaurants();
+    const { data: accs = [] } = useAccommodations();
+    const { data: servs = [] } = useServices();
     const [selectedPOI, setSelectedPOI] = useState(null);
     const [filter, setFilter] = useState("Tutti");
     const [isFullscreen, setIsFullscreen] = useState(false);
     const mapContainerRef = useRef(null);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            const [pois, rests, accs, servs] = await Promise.all([
-                getPointsOfInterest(),
-                getRestaurants(),
-                getAccommodations(),
-                getServices()
-            ]);
-
-            const combined = [
-                ...pois.map(p => ({ ...p, category: p.category || "Monumenti" })),
+    const allPoints = useMemo(() => [
+        ...pois.map(p => ({ ...p, category: p.category || "Monumenti" })),
                 ...rests.map(r => ({
                     ...r,
                     category: "Ristorazione",
@@ -52,11 +46,9 @@ export default function InteractiveMap() {
                     description: s.hours || s.address,
                     image: s.image || "https://images.unsplash.com/photo-1577962917302-cd874c4e31d2?q=80&w=400&auto=format&fit=crop"
                 }))
-            ];
-            setAllPoints(combined);
-        };
-        fetchData();
-    }, []);
+            ],
+        [pois, rests, accs, servs]
+    );
 
     // Listen for fullscreen change events
     useEffect(() => {

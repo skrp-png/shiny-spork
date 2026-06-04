@@ -1,27 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { getRestaurants, getAccommodations } from "@/lib/api";
+import { useState } from "react";
+import { useRestaurants, useAccommodations } from "@/lib/queries";
 import { Phone, MapPin, Clock, Star, Utensils, Bed, Navigation, ExternalLink, X, Wifi, Coffee, PawPrint, Waves } from "lucide-react";
 
 export default function WhereToStay() {
-    const [restaurants, setRestaurants] = useState([]);
-    const [accommodations, setAccommodations] = useState([]);
+    const { data: restaurants = [] } = useRestaurants();
+    const { data: accommodations = [] } = useAccommodations();
     const [activeTab, setActiveTab] = useState("mangiare");
     const [selectedCategory, setSelectedCategory] = useState("Tutti");
     const [selectedItem, setSelectedItem] = useState(null);
-
-    useEffect(() => {
-        const fetchData = async () => {
-            const [resData, accData] = await Promise.all([
-                getRestaurants(),
-                getAccommodations()
-            ]);
-            setRestaurants(resData);
-            setAccommodations(accData);
-        };
-        fetchData();
-    }, []);
 
     const restaurantCategories = ["Tutti", "Ristorante", "Pizzeria", "Bar/Caffè", "Agriturismo"];
     const accommodationCategories = ["Tutti", "Hotel", "B&B", "Agriturismo", "Affittacamere"];

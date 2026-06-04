@@ -14,6 +14,7 @@ import GoogleAnalytics from "@/components/GoogleAnalytics";
 import CookieBanner from "@/components/CookieBanner";
 import NotificationPrompt from "@/components/NotificationPrompt";
 import DesktopRedirect from "@/components/DesktopRedirect";
+import QueryProvider from "@/lib/query-provider";
 
 export const viewport = {
   width: 'device-width',
@@ -94,15 +95,17 @@ export default function RootLayout({ children }) {
         className={`${outfit.variable} antialiased font-sans bg-stone-50 md:bg-stone-100`}
       >
         <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <ServiceWorkerRegistration />
-          <InstallGuide />
-          <CookieBanner />
-          <NotificationPrompt />
-          <DesktopRedirect />
-          {children}
-          <BottomNav />
-        </ThemeProvider>
+        <QueryProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <ServiceWorkerRegistration />
+            <InstallGuide />
+            <CookieBanner />
+            <NotificationPrompt />
+            <DesktopRedirect />
+            {children}
+            <BottomNav />
+          </ThemeProvider>
+        </QueryProvider>
       </body>
     </html>
   );

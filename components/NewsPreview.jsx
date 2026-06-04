@@ -1,24 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
-import { getNews } from "@/lib/api";
+import { useNews } from "@/lib/queries";
 import { Newspaper, ArrowRight } from "lucide-react";
 
 export default function NewsPreview({ initialNews = [] }) {
-    const [latestNews, setLatestNews] = useState(initialNews && initialNews.length > 0 ? initialNews[0] : null);
-
-    useEffect(() => {
-        const fetchLatest = async () => {
-            const data = await getNews();
-            if (data && data.length > 0) {
-                setLatestNews(data[0]);
-            }
-        };
-        if (!initialNews || initialNews.length === 0) {
-            fetchLatest();
-        }
-    }, [initialNews]);
+    const { data: news = [] } = useNews(initialNews);
+    const latestNews = news && news.length > 0 ? news[0] : null;
 
     if (!latestNews) return (
         <div className="h-full min-h-[180px] rounded-2xl bg-stone-100 animate-pulse"></div>

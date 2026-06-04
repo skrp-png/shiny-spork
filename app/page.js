@@ -6,6 +6,8 @@ import NewsPreview from '@/components/NewsPreview';
 import { getAlerts, getEvents, getNews } from '@/lib/api';
 import { getCurrentWeather } from '@/lib/weather';
 
+export const revalidate = 300
+
 export default async function Home() {
   const [alerts, weather, events, news] = await Promise.all([
     getAlerts(),
