@@ -145,6 +145,7 @@ export default function InteractiveMap() {
                             points={filteredPOIs}
                             selectedPoint={selectedPOI}
                             onPointClick={handlePointClick}
+                            isFullscreen={isFullscreen}
                         />
 
                         {/* Pulsante Fullscreen */}

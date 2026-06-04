@@ -1,13 +1,23 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Share, PlusSquare, MoreVertical, Download, Smartphone } from "lucide-react";
+import { X, Share, PlusSquare, MoreVertical, Download, Smartphone, Sparkles } from "lucide-react";
 
 export default function InstallGuide({ forceOpen = false, onClose }) {
     const [isOpen, setIsOpen] = useState(false);
     const [platform, setPlatform] = useState("other"); // 'ios', 'android', 'other'
+    const [deferredPrompt, setDeferredPrompt] = useState(null);
 
     useEffect(() => {
+        const handleBeforeInstallPrompt = (e) => {
+            e.preventDefault();
+            setDeferredPrompt(e);
+            // Se l'evento è disponibile, mostriamo il modal per incoraggiare l'installazione nativa
+            setIsOpen(true);
+        };
+
+        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
         // Rilevamento piattaforma
         const userAgent = window.navigator.userAgent.toLowerCase();
         const isIOS = /iphone|ipad|ipod/.test(userAgent);
@@ -29,12 +39,29 @@ export default function InstallGuide({ forceOpen = false, onClose }) {
                 return () => clearTimeout(timer);
             }
         }
+
+        return () => {
+            window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        };
     }, [forceOpen]);
 
     const handleClose = () => {
         setIsOpen(false);
         localStorage.setItem("pwa_guide_seen", "true");
         if (onClose) onClose();
+    };
+
+    const handleNativeInstall = async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+            console.log('PWA installata con successo');
+        } else {
+            console.log('Installazione PWA rifiutata');
+        }
+        setDeferredPrompt(null);
+        handleClose();
     };
 
     if (!isOpen) return null;
@@ -45,7 +72,7 @@ export default function InstallGuide({ forceOpen = false, onClose }) {
                 {/* Close Button */}
                 <button
                     onClick={handleClose}
-                    className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center bg-stone-100 dark:bg-stone-800 rounded-full text-stone-500"
+                    className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center bg-stone-100 dark:bg-stone-800 rounded-full text-stone-500 hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"
                 >
                     <X size={18} />
                 </button>
@@ -62,60 +89,84 @@ export default function InstallGuide({ forceOpen = false, onClose }) {
                         Usa l'app come una vera applicazione sul tuo telefono per un'esperienza più veloce e notifiche istantanee.
                     </p>
 
-                    <div className="space-y-6">
-                        {platform === 'ios' ? (
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-4 group">
-                                    <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 shrink-0">
-                                        <Share size={20} />
-                                    </div>
-                                    <p className="text-sm text-stone-700 dark:text-stone-200 font-bold">
-                                        1. Clicca sul tasto <span className="text-blue-600 font-black">Condividi</span> in basso su Safari
-                                    </p>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-stone-50 dark:bg-stone-800 flex items-center justify-center text-stone-600 shrink-0">
-                                        <PlusSquare size={20} />
-                                    </div>
-                                    <p className="text-sm text-stone-700 dark:text-stone-200 font-bold">
-                                        2. Seleziona <span className="font-black">Aggiungi alla schermata Home</span>
-                                    </p>
-                                </div>
-                            </div>
-                        ) : platform === 'android' ? (
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-stone-50 dark:bg-stone-800 flex items-center justify-center text-stone-600 shrink-0">
-                                        <MoreVertical size={20} />
-                                    </div>
-                                    <p className="text-sm text-stone-700 dark:text-stone-200 font-bold">
-                                        1. Clicca sui <span className="font-black">tre puntini</span> in alto a destra su Chrome
-                                    </p>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center text-orange-600 shrink-0">
-                                        <Download size={20} />
-                                    </div>
-                                    <p className="text-sm text-stone-700 dark:text-stone-200 font-bold">
-                                        2. Seleziona <span className="font-black">Installa app</span> o "Aggiungi a Home"
-                                    </p>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="p-4 bg-stone-50 dark:bg-stone-800 rounded-2xl text-center">
-                                <p className="text-sm text-stone-500 font-bold italic">
-                                    Dispositivo non riconosciuto. Cerca "Aggiungi a Home" nelle impostazioni del tuo browser.
+                    {deferredPrompt ? (
+                        <div className="space-y-4">
+                            <div className="p-4 bg-orange-50 dark:bg-orange-950/20 rounded-2xl flex items-center gap-3 border border-orange-100/50 dark:border-orange-900/30">
+                                <Sparkles className="text-calitri-terra shrink-0" size={20} />
+                                <p className="text-xs text-orange-800 dark:text-orange-300 font-bold">
+                                    Il tuo browser supporta l'installazione immediata e guidata!
                                 </p>
                             </div>
-                        )}
-                    </div>
+                            <button
+                                onClick={handleNativeInstall}
+                                className="w-full py-4 bg-calitri-terra hover:bg-calitri-terra/90 text-white rounded-2xl font-black shadow-lg shadow-calitri-terra/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                            >
+                                <Download size={18} />
+                                INSTALLA ORA
+                            </button>
+                            <button
+                                onClick={handleClose}
+                                className="w-full py-3 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 rounded-2xl font-bold hover:bg-stone-200 dark:hover:bg-stone-700 transition-all text-sm"
+                            >
+                                Più tardi
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="space-y-6">
+                            {platform === 'ios' ? (
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-4 group">
+                                        <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 shrink-0">
+                                            <Share size={20} />
+                                        </div>
+                                        <p className="text-sm text-stone-700 dark:text-stone-200 font-bold">
+                                            1. Clicca sul tasto <span className="text-blue-600 font-black">Condividi</span> in basso su Safari
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-full bg-stone-50 dark:bg-stone-800 flex items-center justify-center text-stone-600 shrink-0">
+                                            <PlusSquare size={20} />
+                                        </div>
+                                        <p className="text-sm text-stone-700 dark:text-stone-200 font-bold">
+                                            2. Seleziona <span className="font-black">Aggiungi alla schermata Home</span>
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : platform === 'android' ? (
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-full bg-stone-50 dark:bg-stone-800 flex items-center justify-center text-stone-600 shrink-0">
+                                            <MoreVertical size={20} />
+                                        </div>
+                                        <p className="text-sm text-stone-700 dark:text-stone-200 font-bold">
+                                            1. Clicca sui <span className="font-black">tre puntini</span> in alto a destra su Chrome
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-full bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center text-orange-600 shrink-0">
+                                            <Download size={20} />
+                                        </div>
+                                        <p className="text-sm text-stone-700 dark:text-stone-200 font-bold">
+                                            2. Seleziona <span className="font-black">Installa app</span> o "Aggiungi a Home"
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="p-4 bg-stone-50 dark:bg-stone-800 rounded-2xl text-center">
+                                    <p className="text-sm text-stone-500 font-bold italic">
+                                        Dispositivo non riconosciuto. Cerca "Aggiungi a Home" nelle impostazioni del tuo browser.
+                                    </p>
+                                </div>
+                            )}
 
-                    <button
-                        onClick={handleClose}
-                        className="w-full mt-10 py-4 bg-calitri-dark dark:bg-calitri-terra text-white rounded-2xl font-black shadow-lg shadow-calitri-terra/20 active:scale-95 transition-all"
-                    >
-                        HO CAPITO
-                    </button>
+                            <button
+                                onClick={handleClose}
+                                className="w-full mt-6 py-4 bg-calitri-dark dark:bg-calitri-terra text-white rounded-2xl font-black shadow-lg shadow-calitri-terra/20 active:scale-95 transition-all"
+                            >
+                                HO CAPITO
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

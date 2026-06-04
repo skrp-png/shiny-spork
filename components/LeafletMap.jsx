@@ -81,7 +81,24 @@ function ChangeView({ selectedPoint }) {
     return null;
 }
 
-export default function LeafletMap({ points, selectedPoint, onPointClick }) {
+// Component to handle mobile gesture/dragging behavior
+function MapBehaviorController({ isFullscreen }) {
+    const map = useMap();
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        const isMobile = window.innerWidth < 768;
+        if (isMobile && !isFullscreen) {
+            map.dragging.disable();
+            if (map.tap) map.tap.disable();
+        } else {
+            map.dragging.enable();
+            if (map.tap) map.tap.enable();
+        }
+    }, [isFullscreen, map]);
+    return null;
+}
+
+export default function LeafletMap({ points, selectedPoint, onPointClick, isFullscreen = false }) {
     const defaultCenter = [40.8995, 15.4380]; // Better Calitri Center
     const defaultZoom = 16;
 
@@ -98,6 +115,7 @@ export default function LeafletMap({ points, selectedPoint, onPointClick }) {
                     url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
                 />
                 <ChangeView selectedPoint={selectedPoint} />
+                <MapBehaviorController isFullscreen={isFullscreen} />
 
                 {points.map((poi) => {
                     const isSelected = selectedPoint && selectedPoint.id === poi.id && selectedPoint.category === poi.category;

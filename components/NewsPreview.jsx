@@ -5,8 +5,8 @@ import Link from "next/link";
 import { getNews } from "@/lib/api";
 import { Newspaper, ArrowRight } from "lucide-react";
 
-export default function NewsPreview() {
-    const [latestNews, setLatestNews] = useState(null);
+export default function NewsPreview({ initialNews = [] }) {
+    const [latestNews, setLatestNews] = useState(initialNews && initialNews.length > 0 ? initialNews[0] : null);
 
     useEffect(() => {
         const fetchLatest = async () => {
@@ -15,8 +15,10 @@ export default function NewsPreview() {
                 setLatestNews(data[0]);
             }
         };
-        fetchLatest();
-    }, []);
+        if (!initialNews || initialNews.length === 0) {
+            fetchLatest();
+        }
+    }, [initialNews]);
 
     if (!latestNews) return (
         <div className="h-full min-h-[180px] rounded-2xl bg-stone-100 animate-pulse"></div>

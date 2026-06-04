@@ -5,16 +5,18 @@ import Link from "next/link";
 import { Wind, Droplets, ArrowRight } from "lucide-react";
 import { getCurrentWeather, getForecast } from "@/lib/weather";
 
-export default function WeatherCard() {
-    const [weather, setWeather] = useState(null);
+export default function WeatherCard({ initialWeather = null }) {
+    const [weather, setWeather] = useState(initialWeather);
 
     useEffect(() => {
         async function loadWeather() {
             const current = await getCurrentWeather();
             setWeather(current);
         }
-        loadWeather();
-    }, []);
+        if (!initialWeather) {
+            loadWeather();
+        }
+    }, [initialWeather]);
 
     const getIconUrl = (icon) => `https://openweathermap.org/img/wn/${icon}@4x.png`;
 

@@ -5,8 +5,8 @@ import { AlertTriangle, CheckCircle } from "lucide-react";
 import { getAlerts } from "@/lib/api";
 import AlertHistoryModal from "./AlertHistoryModal";
 
-export default function AlertsWidget() {
-    const [alerts, setAlerts] = useState([]);
+export default function AlertsWidget({ initialAlerts = [] }) {
+    const [alerts, setAlerts] = useState(initialAlerts);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     useEffect(() => {
@@ -14,8 +14,10 @@ export default function AlertsWidget() {
             const data = await getAlerts();
             setAlerts(data);
         };
-        fetchAlerts();
-    }, []);
+        if (!initialAlerts || initialAlerts.length === 0) {
+            fetchAlerts();
+        }
+    }, [initialAlerts]);
 
     const hasAlerts = alerts && alerts.length > 0;
 

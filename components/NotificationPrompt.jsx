@@ -2,11 +2,24 @@
 
 import { useEffect, useState } from "react";
 import { Bell, X, ShieldCheck } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { subscribeUser, saveSubscriptionToSupabase, checkNotificationPermission } from "@/lib/notifications";
 
 export default function NotificationPrompt() {
     const [showPrompt, setShowPrompt] = useState(false);
     const [isRequesting, setIsRequesting] = useState(false);
+    const pathname = usePathname();
+
+    // Incrementa il contatore delle pagine viste ad ogni cambio di rotta
+    useEffect(() => {
+        if (!pathname) return;
+        try {
+            const pageViews = parseInt(localStorage.getItem("app_page_views") || "0", 10);
+            localStorage.setItem("app_page_views", (pageViews + 1).toString());
+        } catch (e) {
+            console.error("Errore salvataggio visite:", e);
+        }
+    }, [pathname]);
 
     useEffect(() => {
         let syncAttempts = 0;
@@ -17,9 +30,10 @@ export default function NotificationPrompt() {
                 const hasSeenGuide = localStorage.getItem("pwa_guide_seen");
                 const hasSubscribed = localStorage.getItem("notification_subscribed_v1");
                 const permission = checkNotificationPermission();
+                const pageViews = parseInt(localStorage.getItem("app_page_views") || "0", 10);
 
-                // CASO 1: Mostra il prompt se permission è default
-                if (!hasAsked && permission === "default" && hasSeenGuide) {
+                // CASO 1: Mostra il prompt se permission è default, hasSeenGuide è vero e l'utente ha navigato un po'
+                if (!hasAsked && permission === "default" && hasSeenGuide && pageViews >= 3) {
                     setShowPrompt(true);
                 }
 
