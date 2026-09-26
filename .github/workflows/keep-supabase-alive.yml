@@ -1,0 +1,44 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    # Esegue ogni 3 giorni alle 07:00 UTC (09:00 ora italiana)
+    - cron: '0 7 */3 * *'
+  workflow_dispatch:
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::error::Mancano i secrets NEXT_PUBLIC_SUPABASE_URL o NEXT_PUBLIC_SUPABASE_ANON_KEY su GitHub Repository Secrets."
+            exit 1
+          fi
+
+          echo "Invio ping a Supabase..."
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            "${SUPABASE_URL}/rest/v1/news?select=id&limit=1")
+
+          echo "Risposta HTTP status: $HTTP_STATUS"
+
+          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 400 ]; then
+            echo "Ping riuscito! Supabase rimane attivo."
+          else
+            FALLBACK_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              -H "apikey: $SUPABASE_ANON_KEY" \
+              -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+              "${SUPABASE_URL}/rest/v1/")
+            echo "Risposta fallback: $FALLBACK_STATUS"
+            if [ "$FALLBACK_STATUS" -ge 200 ] && [ "$FALLBACK_STATUS" -lt 400 ]; then
+              echo "Ping fallback riuscito!"
+            else
+              exit 1
+            fi
+          fi
