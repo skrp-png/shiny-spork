@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import webpush from "npm:web-push@3.6.7"
+import { isServiceRoleRequest, sanitizePushUrl } from "../_shared/security.ts"
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -15,8 +16,18 @@ webpush.setVapidDetails(
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
 Deno.serve(async (req) => {
+    // Only the backend (Telegram bot, DB triggers) may send pushes: they use the service role key.
+    // The anon key is public (it ships in the browser bundle) and must be rejected.
+    if (!isServiceRoleRequest(req.headers.get('Authorization'), SUPABASE_SERVICE_ROLE_KEY)) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' },
+        })
+    }
+
     try {
-        const { type, title, body, url } = await req.json()
+        const { type, title, body, url: rawUrl } = await req.json()
+        const url = sanitizePushUrl(rawUrl)
 
         if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
             return new Response(JSON.stringify({ error: 'VAPID keys not configured' }), { status: 500 })
@@ -51,7 +62,7 @@ Deno.serve(async (req) => {
 
             return webpush.sendNotification(
                 pushSubscription,
-                JSON.stringify({ title, body, url: url || '/' })
+                JSON.stringify({ title, body, url })
             ).catch(async (err) => {
                 if (err.statusCode === 410 || err.statusCode === 404) {
                     await supabase.from('notification_subscriptions').delete().match({ token: sub.token })

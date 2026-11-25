@@ -108,7 +108,12 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
 
-    const urlToOpen = new URL(event.notification.data.url || '/', self.location.origin).href;
+    // Open only pages of this app, never external links received in a push
+    let urlToOpen = new URL('/', self.location.origin).href;
+    try {
+        const target = new URL(event.notification.data?.url || '/', self.location.origin);
+        if (target.origin === self.location.origin) urlToOpen = target.href;
+    } catch (e) { /* invalid URL: keep home */ }
 
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
