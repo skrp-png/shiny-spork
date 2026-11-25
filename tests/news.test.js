@@ -13,3 +13,28 @@ describe("readingTimeMinutes", () => {
         expect(readingTimeMinutes("")).toBe(1);
     });
 });
+
+import { getNewsCategories } from "@/lib/news";
+
+describe("getNewsCategories", () => {
+    it("always starts with 'Tutte'", () => {
+        expect(getNewsCategories([])).toEqual(["Tutte"]);
+    });
+
+    it("includes categories sent by the Telegram bot that are not in the fixed list", () => {
+        const news = [{ category: "Notizie" }, { category: "Eventi" }];
+        expect(getNewsCategories(news)).toContain("Eventi");
+    });
+
+    it("lists the standard categories first, then others alphabetically, without duplicates or empty values", () => {
+        const news = [
+            { category: "Sport" }, { category: "Storia" }, { category: "Eventi" },
+            { category: "Notizie" }, { category: "Storia" }, { category: "" }, { category: null },
+        ];
+        expect(getNewsCategories(news)).toEqual(["Tutte", "Notizie", "Storia", "Eventi", "Sport"]);
+    });
+
+    it("hides standard categories that have no articles", () => {
+        expect(getNewsCategories([{ category: "Storia" }])).toEqual(["Tutte", "Storia"]);
+    });
+});

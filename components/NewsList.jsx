@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useNews } from "@/lib/queries";
-import { readingTimeMinutes } from "@/lib/news";
+import { readingTimeMinutes, getNewsCategories } from "@/lib/news";
 import { Calendar, User, ArrowRight, X, Clock } from "lucide-react";
 
 export default function NewsList() {
@@ -12,7 +12,7 @@ export default function NewsList() {
     const [scrollProgress, setScrollProgress] = useState(0);
     const modalContentRef = useRef(null);
 
-    const categories = ["Tutte", "Notizie", "Storia", "Tradizioni"];
+    const categories = getNewsCategories(news);
 
     const filteredNews = filter === "Tutte"
         ? news
