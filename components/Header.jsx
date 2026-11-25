@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Sun, MapPin, Maximize2, X, CloudSun } from "lucide-react";
 import Link from "next/link";
 import { saints } from "@/data/mocks";
-import { getCurrentWeather, getForecast } from "@/lib/weather";
+import { getCurrentWeather, getForecast, formatTemperature } from "@/lib/weather";
 import { getSaintOfTheDay } from "@/lib/saints";
 import { getGreeting } from "@/lib/timeUtils";
 
@@ -94,7 +94,7 @@ export default function Header() {
                                 <Sun className="w-5 h-5 text-white fill-white" />
                             )}
                             <span className="text-lg font-bold text-white leading-none">
-                                {weather?.main?.temp ? Math.round(weather.main.temp) : "--"}°
+                                {formatTemperature(weather?.main?.temp)}°
                             </span>
                         </div>
                     </Link>

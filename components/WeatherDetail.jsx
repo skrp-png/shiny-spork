@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Wind, Droplets, Calendar, Clock, CloudRain } from "lucide-react";
 import { formatTime } from "@/lib/utils";
+import { formatTemperature } from "@/lib/weather";
 
 const getIconUrl = (icon) => `https://openweathermap.org/img/wn/${icon}@4x.png`;
 
@@ -47,7 +48,7 @@ export default function WeatherDetail({ current, forecast }) {
                             />
                         </div>
                         <h2 className="text-7xl font-black text-calitri-dark dark:text-white tracking-tighter leading-none mb-1">
-                            {Math.round(selectedDate === todayStr ? current?.main?.temp : selectedDaySummary?.main?.temp)}°
+                            {formatTemperature(selectedDate === todayStr ? current?.main?.temp : selectedDaySummary?.main?.temp)}°
                         </h2>
                         <p className="text-xl font-medium text-stone-400 capitalize">
                             {selectedDate === todayStr ? current?.weather[0]?.description : selectedDaySummary?.weather[0]?.description}
@@ -55,7 +56,7 @@ export default function WeatherDetail({ current, forecast }) {
                     </div>
                     {selectedDate !== todayStr && (
                         <div className="flex justify-center gap-4 text-sm font-bold mt-4">
-                            <span className="text-red-500 bg-red-50 dark:bg-red-900/20 px-4 py-1.5 rounded-full border border-red-100/50 dark:border-red-900/30 text-xs">Max {Math.round(selectedDaySummary?.main?.temp_max || 0)}°</span>
+                            <span className="text-red-500 bg-red-50 dark:bg-red-900/20 px-4 py-1.5 rounded-full border border-red-100/50 dark:border-red-900/30 text-xs">Max {formatTemperature(selectedDaySummary?.main?.temp_max)}°</span>
                         </div>
                     )}
                 </div>
@@ -75,7 +76,7 @@ export default function WeatherDetail({ current, forecast }) {
                                 </div>
 
                                 <div className="flex-1 flex justify-center">
-                                    <span className="text-xl font-black text-calitri-dark dark:text-white group-hover:text-blue-600 transition-colors">{Math.round(hour.temp)}°</span>
+                                    <span className="text-xl font-black text-calitri-dark dark:text-white group-hover:text-blue-600 transition-colors">{formatTemperature(hour.temp)}°</span>
                                 </div>
 
                                 <div className="flex items-center gap-4 text-[10px] font-bold text-stone-400 uppercase">
@@ -135,8 +136,8 @@ export default function WeatherDetail({ current, forecast }) {
                                     className="w-8 h-8 my-1"
                                 />
                                 <div className="flex gap-1.5 mt-1">
-                                    <span className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-stone-900 dark:text-stone-200'}`}>{Math.round(day.main.temp_max)}°</span>
-                                    <span className={`text-xs font-medium ${isSelected ? 'text-white/60' : 'text-stone-400'}`}>{Math.round(day.main.temp_min)}°</span>
+                                    <span className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-stone-900 dark:text-stone-200'}`}>{formatTemperature(day.main.temp_max)}°</span>
+                                    <span className={`text-xs font-medium ${isSelected ? 'text-white/60' : 'text-stone-400'}`}>{formatTemperature(day.main.temp_min)}°</span>
                                 </div>
                             </div>
                         );
