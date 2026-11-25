@@ -2,43 +2,34 @@
 
 import { useMemo, useState } from "react";
 import { useEvents } from "@/lib/queries";
-import { ArrowRight, MapPin } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, MapPin, CalendarDays } from "lucide-react";
 import { formatTime } from "@/lib/utils";
+import { getHomeEvent } from "@/lib/events";
 import EventModal from "@/components/EventModal";
 
 export default function TodayEvents({ initialEvents = [] }) {
     const { data: events = [] } = useEvents(initialEvents);
     const [selectedEvent, setSelectedEvent] = useState(null);
 
-    const getActiveEvent = (eventsList) => {
-        if (!eventsList || eventsList.length === 0) return { event: null, isToday: false };
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const todayEventsList = eventsList.filter(event => {
-            const eventDate = new Date(event.date);
-            eventDate.setHours(0, 0, 0, 0);
-            return eventDate.getTime() === today.getTime();
-        });
-        if (todayEventsList.length > 0) {
-            return { event: todayEventsList[0], isToday: true };
-        }
-        const upcoming = eventsList
-            .filter(event => new Date(event.date) >= today)
-            .sort((a, b) => new Date(a.date) - new Date(b.date));
-        if (upcoming.length > 0) {
-            return { event: upcoming[0], isToday: false };
-        }
-        return { event: null, isToday: false };
-    };
+    const active = useMemo(() => getHomeEvent(events), [events]);
 
-    const active = useMemo(() => getActiveEvent(events), [events]);
+    // No upcoming events: show an empty state instead of an endless loading skeleton
+    if (!active) return (
+        <Link href="/eventi" className="h-full min-h-[180px] rounded-3xl bg-calitri-dark/10 dark:bg-stone-800 p-5 flex flex-col justify-between active:scale-[0.98] transition-all">
+            <CalendarDays className="w-6 h-6 text-calitri-dark dark:text-stone-300" />
+            <div>
+                <h3 className="text-sm font-bold text-calitri-dark dark:text-stone-100 leading-tight mb-1">Nessun evento in programma</h3>
+                <p className="text-[10px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider flex items-center gap-1">
+                    Vedi calendario <ArrowRight className="w-2.5 h-2.5" />
+                </p>
+            </div>
+        </Link>
+    );
+
     const displayEvent = active.event;
     const isToday = active.isToday;
-
-    if (!displayEvent) return (
-        <div className="h-full min-h-[180px] rounded-3xl bg-calitri-dark/10 animate-pulse"></div>
-    );
-    const eventDate = new Date(displayEvent.date);
+    const eventDate = new Date(`${displayEvent.date}T00:00:00`); // local midnight
     const dayLabel = isToday ? "OGGI" : eventDate.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
 
     return (

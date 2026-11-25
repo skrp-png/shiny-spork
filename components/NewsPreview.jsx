@@ -8,8 +8,17 @@ export default function NewsPreview({ initialNews = [] }) {
     const { data: news = [] } = useNews(initialNews);
     const latestNews = news && news.length > 0 ? news[0] : null;
 
+    // No news yet: empty state instead of an endless loading skeleton
     if (!latestNews) return (
-        <div className="h-full min-h-[180px] rounded-2xl bg-stone-100 animate-pulse"></div>
+        <Link href="/news" className="h-full min-h-[180px] rounded-2xl bg-stone-100 dark:bg-stone-800 p-4 flex flex-col justify-between active:scale-[0.98] transition-all">
+            <div className="w-10 h-10 bg-white/60 dark:bg-white/10 rounded-xl flex items-center justify-center text-calitri-terra">
+                <Newspaper className="w-5 h-5" />
+            </div>
+            <div>
+                <h3 className="font-black text-base mb-1 leading-tight text-calitri-dark dark:text-stone-100">News & Storie</h3>
+                <p className="text-xs text-stone-500 dark:text-stone-400 font-medium">Nessuna notizia per ora</p>
+            </div>
+        </Link>
     );
 
     return (
