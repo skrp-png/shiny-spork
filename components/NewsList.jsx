@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useNews } from "@/lib/queries";
+import { readingTimeMinutes } from "@/lib/news";
 import { Calendar, User, ArrowRight, X, Clock } from "lucide-react";
 
 export default function NewsList() {
@@ -25,12 +26,7 @@ export default function NewsList() {
         return date.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
     };
 
-    const calculateReadingTime = (text) => {
-        const wordsPerMinute = 200;
-        const words = text.split(/\s+/).length;
-        const minutes = Math.ceil(words / wordsPerMinute);
-        return minutes;
-    };
+    const calculateReadingTime = readingTimeMinutes;
 
     // Gestione scroll progress
     useEffect(() => {
