@@ -16,5 +16,5 @@ ALTER TABLE public.notification_subscriptions ENABLE ROW LEVEL SECURITY;
 -- le policy per il service_role non sono necessarie perché lo bypassa già.
 
 -- 4. Fix finale per le funzioni (search path) se non già fatto
-ALTER FUNCTION public.notify_new_news() SET search_path = public, extensions;
-ALTER FUNCTION public.notify_new_alert() SET search_path = public, extensions;
+ALTER FUNCTION IF EXISTS public.notify_new_news() SET search_path = public, extensions;
+ALTER FUNCTION IF EXISTS public.notify_new_alert() SET search_path = public, extensions;
