@@ -63,12 +63,7 @@ export default function InstallGuide({ forceOpen = false, onClose, autoOpen = tr
     const handleNativeInstall = async () => {
         if (!deferredPrompt) return;
         deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
-            console.log('PWA installata con successo');
-        } else {
-            console.log('Installazione PWA rifiutata');
-        }
+        await deferredPrompt.userChoice;
         savedInstallPrompt = null; // the native prompt can be used only once
         setDeferredPrompt(null);
         handleClose();
