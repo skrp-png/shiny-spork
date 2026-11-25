@@ -1,13 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Ottimizzazione immagini
+  // Nessun host remoto consentito: l'app usa <img> semplici. Un wildcard ('**') renderebbe
+  // /_next/image un proxy aperto per qualsiasi immagine, a spese del nostro account Vercel.
+  // Se in futuro si usa next/image con immagini esterne, aggiungere qui gli host specifici.
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**',
-      },
-    ],
+    remotePatterns: [],
     formats: ['image/avif', 'image/webp'],
   },
 
