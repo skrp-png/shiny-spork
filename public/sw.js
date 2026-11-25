@@ -1,8 +1,10 @@
 /* eslint-disable no-undef */
-const CACHE_NAME = 'buongiorno-calitri-v1';
+// Bump the version whenever the caching logic changes: old caches are deleted on activate.
+const CACHE_NAME = 'buongiorno-calitri-v2';
+const OFFLINE_URL = '/offline';
 const ASSETS_TO_CACHE = [
     '/',
-    '/offline',
+    OFFLINE_URL,
     '/manifest.json',
     '/favicon.ico',
     '/icon-192.png',
@@ -34,49 +36,65 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
-self.addEventListener('fetch', (event) => {
-    // Intercetta solo richieste GET HTTP/S ed escludi le chiamate alle Edge Functions di Supabase
-    if (
-        event.request.method !== 'GET' ||
-        !event.request.url.startsWith('http') ||
-        event.request.url.includes('/functions/v1/')
-    ) {
-        return;
+/**
+ * Decides how a request is handled:
+ * - "bypass": not handled by the SW (other origins, non-GET, Next.js RSC data requests)
+ * - "cache-first": immutable assets (hashed /_next/static files, icons, images)
+ * - "network-first": pages and everything else; the cache is only an offline fallback,
+ *   so users always see the latest content and the latest deploy when online.
+ */
+function getCacheStrategy(request, origin) {
+    if (request.method !== 'GET') return 'bypass';
+    let url;
+    try {
+        url = new URL(request.url);
+    } catch (e) {
+        return 'bypass';
     }
+    if (url.origin !== origin) return 'bypass';
+    // React Server Components payloads: always fresh, never cached
+    if (url.searchParams.has('_rsc') || request.headers.get('RSC') === '1') return 'bypass';
+    if (url.pathname.startsWith('/_next/static/')) return 'cache-first';
+    if (/\.(png|jpg|jpeg|svg|ico|webp|avif|woff2?)$/i.test(url.pathname)) return 'cache-first';
+    return 'network-first';
+}
 
-    event.respondWith(
-        caches.match(event.request).then((cachedResponse) => {
-            if (cachedResponse) {
-                // Strategia Stale-While-Revalidate per caricamento istantaneo
-                fetch(event.request).then((networkResponse) => {
-                    if (networkResponse.status === 200) {
-                        caches.open(CACHE_NAME).then((cache) => {
-                            cache.put(event.request, networkResponse);
-                        });
-                    }
-                }).catch(() => { });
-                return cachedResponse;
-            }
+function isPageRequest(request) {
+    return request.mode === 'navigate' || (request.headers.get('accept') || '').includes('text/html');
+}
 
-            return fetch(event.request).then((networkResponse) => {
-                if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-                    return networkResponse;
-                }
+async function putInCache(request, response) {
+    if (response && response.status === 200 && response.type === 'basic') {
+        const cache = await caches.open(CACHE_NAME);
+        await cache.put(request, response.clone());
+    }
+    return response;
+}
 
-                const responseToCache = networkResponse.clone();
-                caches.open(CACHE_NAME).then((cache) => {
-                    cache.put(event.request, responseToCache);
-                });
+async function networkFirst(request) {
+    try {
+        const response = await fetch(request);
+        await putInCache(request, response);
+        return response;
+    } catch (err) {
+        const cached = await caches.match(request);
+        if (cached) return cached;
+        if (isPageRequest(request)) return caches.match(OFFLINE_URL);
+        throw err;
+    }
+}
 
-                return networkResponse;
-            }).catch(() => {
-                // Offline fallback per pagine HTML
-                if (event.request.headers.get('accept')?.includes('text/html')) {
-                    return caches.match('/offline');
-                }
-            });
-        })
-    );
+async function cacheFirst(request) {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+    const response = await fetch(request);
+    return putInCache(request, response);
+}
+
+self.addEventListener('fetch', (event) => {
+    const strategy = getCacheStrategy(event.request, self.location.origin);
+    if (strategy === 'bypass') return;
+    event.respondWith(strategy === 'cache-first' ? cacheFirst(event.request) : networkFirst(event.request));
 });
 
 self.addEventListener('push', (event) => {
