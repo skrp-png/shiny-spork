@@ -96,6 +96,9 @@ function MapBehaviorController({ isFullscreen }) {
             map.dragging.enable();
             if (map.tap) map.tap.enable();
         }
+        // The container changed size (fullscreen on/off): let Leaflet recompute the tiles
+        const timer = setTimeout(() => map.invalidateSize(), 350);
+        return () => clearTimeout(timer);
     }, [isFullscreen, map]);
     return null;
 }
