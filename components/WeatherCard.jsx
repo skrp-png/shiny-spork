@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Wind, Droplets, ArrowRight } from "lucide-react";
-import { getCurrentWeather, getForecast } from "@/lib/weather";
+import { getCurrentWeather, formatTemperature, formatMeasure } from "@/lib/weather";
 
 export default function WeatherCard({ initialWeather = null }) {
     const [weather, setWeather] = useState(initialWeather);
@@ -45,7 +45,7 @@ export default function WeatherCard({ initialWeather = null }) {
                             )}
                             <div>
                                 <h2 className="text-5xl font-black text-white tracking-tighter">
-                                    {weather?.main?.temp ? Math.round(weather.main.temp) : "--"}°
+                                    {formatTemperature(weather?.main?.temp)}°
                                 </h2>
                                 <p className="text-sm font-medium text-white/80 capitalize mt-1">
                                     {weather?.weather?.[0]?.description || "Caricamento..."}
@@ -56,11 +56,11 @@ export default function WeatherCard({ initialWeather = null }) {
                         <div className="flex gap-4 mt-4">
                             <div className="flex items-center gap-2 text-white/80 text-xs">
                                 <Droplets className="w-4 h-4" />
-                                <span>{weather?.main?.humidity || "--"}%</span>
+                                <span>{formatMeasure(weather?.main?.humidity)}%</span>
                             </div>
                             <div className="flex items-center gap-2 text-white/80 text-xs">
                                 <Wind className="w-4 h-4" />
-                                <span>{weather?.wind?.speed || "--"} m/s</span>
+                                <span>{formatMeasure(weather?.wind?.speed)} m/s</span>
                             </div>
                         </div>
                     </div>

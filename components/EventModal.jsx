@@ -38,8 +38,8 @@ export default function EventModal({ event, onClose }) {
         if (navigator.share) {
             try {
                 await navigator.share(shareData);
-            } catch (err) {
-                console.log('Error sharing:', err);
+            } catch {
+                // the user closed the share sheet: nothing to do
             }
         } else {
             // Fallback: Copy to clipboard

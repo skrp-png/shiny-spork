@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { useEffect } from "react";
+import { withValidCoordinates } from "@/lib/map";
 
 // Fix for default marker icons in Leaflet + Next.js
 const DefaultIcon = L.icon({
@@ -72,7 +73,8 @@ const selectedIcons = {
 function ChangeView({ selectedPoint }) {
     const map = useMap();
     useEffect(() => {
-        if (selectedPoint) {
+        // A selected place without coordinates (shown in the list) must not crash the map
+        if (selectedPoint && withValidCoordinates([selectedPoint]).length > 0) {
             const center = [selectedPoint.coordinates.lat, selectedPoint.coordinates.lng];
             const zoom = 18;
             map.setView(center, zoom, { animate: true });
@@ -94,6 +96,9 @@ function MapBehaviorController({ isFullscreen }) {
             map.dragging.enable();
             if (map.tap) map.tap.enable();
         }
+        // The container changed size (fullscreen on/off): let Leaflet recompute the tiles
+        const timer = setTimeout(() => map.invalidateSize(), 350);
+        return () => clearTimeout(timer);
     }, [isFullscreen, map]);
     return null;
 }
@@ -117,7 +122,7 @@ export default function LeafletMap({ points, selectedPoint, onPointClick, isFull
                 <ChangeView selectedPoint={selectedPoint} />
                 <MapBehaviorController isFullscreen={isFullscreen} />
 
-                {points.map((poi) => {
+                {withValidCoordinates(points).map((poi) => {
                     const isSelected = selectedPoint && selectedPoint.id === poi.id && selectedPoint.category === poi.category;
                     return (
                         <Marker

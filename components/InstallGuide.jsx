@@ -2,48 +2,57 @@
 
 import { useState, useEffect } from "react";
 import { X, Share, PlusSquare, MoreVertical, Download, Smartphone, Sparkles } from "lucide-react";
+import { shouldAutoOpenInstallGuide } from "@/lib/pwa";
 
-export default function InstallGuide({ forceOpen = false, onClose }) {
+// Android fires beforeinstallprompt once per page load: keep it here so every copy of the
+// guide (layout + settings page) can offer the native "Installa ora" button.
+let savedInstallPrompt = null;
+
+/**
+ * @param autoOpen  true for the global copy (layout) that may open by itself on first visit;
+ *                  false for copies opened only on demand via forceOpen (settings page).
+ */
+export default function InstallGuide({ forceOpen = false, onClose, autoOpen = true }) {
     const [isOpen, setIsOpen] = useState(false);
     const [platform, setPlatform] = useState("other"); // 'ios', 'android', 'other'
     const [deferredPrompt, setDeferredPrompt] = useState(null);
 
     useEffect(() => {
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+        const canAutoOpen = () => shouldAutoOpenInstallGuide({
+            isStandalone,
+            hasSeen: Boolean(localStorage.getItem("pwa_guide_seen")),
+            autoOpen,
+        });
+
+        if (savedInstallPrompt) setDeferredPrompt(savedInstallPrompt);
+
         const handleBeforeInstallPrompt = (e) => {
             e.preventDefault();
+            savedInstallPrompt = e;
             setDeferredPrompt(e);
-            // Se l'evento è disponibile, mostriamo il modal per incoraggiare l'installazione nativa
-            setIsOpen(true);
+            // Mostra la guida solo se l'utente non l'ha già vista (niente popup a ogni visita)
+            if (canAutoOpen()) setIsOpen(true);
         };
-
         window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
         // Rilevamento piattaforma
         const userAgent = window.navigator.userAgent.toLowerCase();
-        const isIOS = /iphone|ipad|ipod/.test(userAgent);
-        const isAndroid = /android/.test(userAgent);
+        if (/iphone|ipad|ipod/.test(userAgent)) setPlatform("ios");
+        else if (/android/.test(userAgent)) setPlatform("android");
 
-        if (isIOS) setPlatform("ios");
-        else if (isAndroid) setPlatform("android");
-
-        // Rileva se è già installata
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-
-        // Apri automaticamente solo se non installata e non vista prima (o se forzato)
+        let timer;
         if (forceOpen) {
             setIsOpen(true);
-        } else if (!isStandalone) {
-            const hasSeen = localStorage.getItem("pwa_guide_seen");
-            if (!hasSeen) {
-                const timer = setTimeout(() => setIsOpen(true), 2000); // Ritardo per non spaventare subito
-                return () => clearTimeout(timer);
-            }
+        } else if (canAutoOpen()) {
+            timer = setTimeout(() => setIsOpen(true), 2000); // Ritardo per non spaventare subito
         }
 
         return () => {
+            clearTimeout(timer);
             window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
         };
-    }, [forceOpen]);
+    }, [forceOpen, autoOpen]);
 
     const handleClose = () => {
         setIsOpen(false);
@@ -54,12 +63,8 @@ export default function InstallGuide({ forceOpen = false, onClose }) {
     const handleNativeInstall = async () => {
         if (!deferredPrompt) return;
         deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
-            console.log('PWA installata con successo');
-        } else {
-            console.log('Installazione PWA rifiutata');
-        }
+        await deferredPrompt.userChoice;
+        savedInstallPrompt = null; // the native prompt can be used only once
         setDeferredPrompt(null);
         handleClose();
     };

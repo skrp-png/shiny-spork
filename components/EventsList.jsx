@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useEvents } from "@/lib/queries";
 import { CalendarDays, MapPin, Clock, Repeat, ChevronDown, ChevronUp } from "lucide-react";
 import { formatTime } from "@/lib/utils";
+import { getUpcomingEvents } from "@/lib/events";
 
 import EventModal from "@/components/EventModal";
 
@@ -27,27 +28,9 @@ export default function EventsList({ selectedDate }) {
         : "";
     const isToday = new Date().toDateString() === selectedDate?.toDateString();
 
-    console.log("DEBUG EventsList:", {
-        selectedDate,
-        targetDateStr,
-        totalEvents: events.length,
-        sampleEventDate: events[0]?.date
-    });
-
-    const dayEvents = events.filter(event => {
-        const match = event.date === targetDateStr;
-        if (match) console.log("MATCH FOUND:", event);
-        return match;
-    });
-    const otherEvents = events
-        .filter(event => {
-            if (event.date === targetDateStr) return false;
-            // Mostra solo eventi dell'anno corrente (o selezionato)
-            const eventYear = new Date(event.date).getFullYear();
-            const selectedYear = selectedDate ? selectedDate.getFullYear() : new Date().getFullYear();
-            return eventYear === selectedYear;
-        })
-        .sort((a, b) => new Date(a.date) - new Date(b.date));
+    const dayEvents = events.filter(event => event.date === targetDateStr);
+    // Solo eventi futuri (da oggi a un anno), escluso il giorno selezionato già mostrato sopra
+    const otherEvents = getUpcomingEvents(events, targetDateStr);
 
     const EventCard = ({ event, index }) => {
         const { day, month } = formatDate(event.date);

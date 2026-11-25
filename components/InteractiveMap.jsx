@@ -4,6 +4,7 @@ import { useState, useRef, useMemo, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { usePointsOfInterest, useRestaurants, useAccommodations, useServices } from "@/lib/queries";
 import { MapPin, Navigation, X, ExternalLink, Map as MapIcon, Maximize, Minimize } from "lucide-react";
+import { supportsNativeFullscreen } from "@/lib/fullscreen";
 
 // Import Map component dynamically to avoid SSR issues
 const LeafletMap = dynamic(() => import("./LeafletMap"), {
@@ -25,7 +26,10 @@ export default function InteractiveMap() {
     const { data: servs = [] } = useServices();
     const [selectedPOI, setSelectedPOI] = useState(null);
     const [filter, setFilter] = useState("Tutti");
-    const [isFullscreen, setIsFullscreen] = useState(false);
+    const [isNativeFullscreen, setIsNativeFullscreen] = useState(false);
+    // iPhone Safari can't put the map in native fullscreen: we cover the screen with CSS instead
+    const [isPseudoFullscreen, setIsPseudoFullscreen] = useState(false);
+    const isFullscreen = isNativeFullscreen || isPseudoFullscreen;
     const mapContainerRef = useRef(null);
 
     const allPoints = useMemo(() => [
@@ -53,14 +57,26 @@ export default function InteractiveMap() {
     // Listen for fullscreen change events
     useEffect(() => {
         const handleFullscreenChange = () => {
-            setIsFullscreen(!!document.fullscreenElement);
+            setIsNativeFullscreen(!!(document.fullscreenElement || document.webkitFullscreenElement));
         };
         document.addEventListener('fullscreenchange', handleFullscreenChange);
         return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
     }, []);
 
+    // Block page scrolling behind the pseudo-fullscreen map
+    useEffect(() => {
+        if (!isPseudoFullscreen) return;
+        const previous = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+        return () => { document.body.style.overflow = previous; };
+    }, [isPseudoFullscreen]);
+
     const toggleFullscreen = () => {
-        if (!document.fullscreenElement) {
+        if (!supportsNativeFullscreen(document)) {
+            setIsPseudoFullscreen((v) => !v);
+            return;
+        }
+        if (!(document.fullscreenElement || document.webkitFullscreenElement)) {
             const element = mapContainerRef.current;
             if (element?.requestFullscreen) {
                 element.requestFullscreen();
@@ -128,10 +144,10 @@ export default function InteractiveMap() {
                 </div>
 
                 {/* Mappa Reale - Sticky during scroll */}
-                <div className="mb-6 sticky top-0 z-30 -mx-5 md:mx-0">
+                <div className={isPseudoFullscreen ? "fixed inset-0 z-[1100] bg-white dark:bg-[#1a1a1a] pt-[env(safe-area-inset-top)]" : "mb-6 sticky top-0 z-30 -mx-5 md:mx-0"}>
                     <div
                         ref={mapContainerRef}
-                        className={`relative w-full overflow-hidden md:rounded-2xl border-b md:border border-stone-200 dark:border-stone-800 shadow-sm transition-all duration-500 ${isFullscreen ? 'h-screen' : 'h-[35vh] min-h-[250px]'}`}
+                        className={`relative w-full overflow-hidden md:rounded-2xl border-b md:border border-stone-200 dark:border-stone-800 shadow-sm transition-all duration-500 ${isPseudoFullscreen ? 'h-full' : isFullscreen ? 'h-screen' : 'h-[35vh] min-h-[250px]'}`}
                     >
                         <LeafletMap
                             points={filteredPOIs}
@@ -212,7 +228,7 @@ export default function InteractiveMap() {
 
             {/* Modal Dettaglio POI */}
             {selectedPOI && (
-                <div className="fixed inset-0 z-[1000] flex items-end md:items-center justify-center bg-black/40 animate-fadeIn"
+                <div className="fixed inset-0 z-[1200] flex items-end md:items-center justify-center bg-black/40 animate-fadeIn"
                     onClick={() => setSelectedPOI(null)}
                 >
                     <div

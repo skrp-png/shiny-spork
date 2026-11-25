@@ -3,24 +3,22 @@
 import { useState, useEffect } from "react";
 import { Sun, MapPin, Maximize2, X, CloudSun } from "lucide-react";
 import Link from "next/link";
-import { saints } from "@/data/mocks";
-import { getCurrentWeather, getForecast } from "@/lib/weather";
+import { getCurrentWeather, formatTemperature } from "@/lib/weather";
 import { getSaintOfTheDay } from "@/lib/saints";
 import { getGreeting } from "@/lib/timeUtils";
 
-export default function Header() {
+export default function Header({ initialWeather = null }) {
     const [dateStr, setDateStr] = useState("");
     const [saint, setSaint] = useState("");
     const [greeting, setGreeting] = useState("Buongiorno");
-    const [webcamUrl, setWebcamUrl] = useState("http://www.calitri.org/webcam.jpg");
+    const [webcamUrl, setWebcamUrl] = useState("https://www.calitri.org/webcam.jpg");
 
     // Webcam state
     const [isWebcamExpanded, setIsWebcamExpanded] = useState(false);
     const [lastUpdated, setLastUpdated] = useState("");
 
-    // Weather state
-    const [weather, setWeather] = useState(null);
-    const [forecast, setForecast] = useState(null);
+    // Weather: provided by the server on the home page, fetched here only as a fallback
+    const [weather, setWeather] = useState(initialWeather);
 
     useEffect(() => {
         const updateTime = () => {
@@ -40,24 +38,19 @@ export default function Header() {
         // Webcam Auto-Refresh
         const interval = setInterval(() => {
             const timestamp = new Date().getTime();
-            setWebcamUrl(`http://www.calitri.org/webcam.jpg?t=${timestamp}`);
+            setWebcamUrl(`https://www.calitri.org/webcam.jpg?t=${timestamp}`);
             updateTime();
         }, 60000);
 
         // Fetch Saint
         getSaintOfTheDay().then(name => setSaint(name));
 
-        // Fetch Weather
-        async function loadWeather() {
-            const current = await getCurrentWeather();
-            const fore = await getForecast();
-            setWeather(current);
-            setForecast(fore);
+        if (!initialWeather) {
+            getCurrentWeather().then(setWeather);
         }
-        loadWeather();
 
         return () => clearInterval(interval);
-    }, []);
+    }, [initialWeather]);
 
     return (
         <>
@@ -94,7 +87,7 @@ export default function Header() {
                                 <Sun className="w-5 h-5 text-white fill-white" />
                             )}
                             <span className="text-lg font-bold text-white leading-none">
-                                {weather?.main?.temp ? Math.round(weather.main.temp) : "--"}°
+                                {formatTemperature(weather?.main?.temp)}°
                             </span>
                         </div>
                     </Link>

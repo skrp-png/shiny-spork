@@ -82,6 +82,10 @@ supabase secrets set VAPID_PRIVATE_KEY=your_vapid_private_key
 # Chiavi per il bot Telegram
 supabase secrets set TELEGRAM_BOT_TOKEN=your_bot_token
 supabase secrets set ALLOWED_TELEGRAM_ID=your_telegram_id
+
+# Segreto del webhook (stringa casuale, es. generata con: openssl rand -hex 32)
+# Il bot rifiuta qualsiasi richiesta che non lo contenga.
+supabase secrets set TELEGRAM_WEBHOOK_SECRET=your_random_secret
 ```
 
 ### 2. Imposta il webhook Telegram
@@ -89,12 +93,37 @@ supabase secrets set ALLOWED_TELEGRAM_ID=your_telegram_id
 ```bash
 # Sostituisci con i tuoi valori
 TELEGRAM_BOT_TOKEN="il_tuo_token"
+TELEGRAM_WEBHOOK_SECRET="lo_stesso_segreto_impostato_sopra"
 SUPABASE_FUNCTION_URL="https://your_project.supabase.co/functions/v1/telegram-bot"
 
-# Imposta il webhook
+# Imposta il webhook (secret_token è obbligatorio: Telegram lo invia in ogni richiesta)
 curl -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setWebhook" \
   -H "Content-Type: application/json" \
-  -d "{\"url\": \"${SUPABASE_FUNCTION_URL}\"}"
+  -d "{\"url\": \"${SUPABASE_FUNCTION_URL}\", \"secret_token\": \"${TELEGRAM_WEBHOOK_SECRET}\"}"
+```
+
+### 3. Deploy delle Edge Functions
+
+```bash
+# Il bot riceve richieste da Telegram (senza JWT Supabase): la verifica è fatta dal secret_token
+supabase functions deploy telegram-bot --no-verify-jwt
+# send-push accetta solo la service role key (controllo nel codice)
+supabase functions deploy send-push
+supabase functions deploy save-subscription
+```
+
+### 4. Notifiche push
+
+Le notifiche partono solo dal bot Telegram. Se nel database esistono ancora i vecchi trigger
+(`on_news_inserted`, `on_alert_inserted`), eseguire `scripts/remove_push_triggers.sql`
+nell'SQL editor di Supabase, altrimenti ogni notifica arriva due volte.
+
+## 🧪 Test
+
+```bash
+npm test             # test unitari (Vitest)
+npm run build        # build di produzione
+npm run test:smoke   # avvia la build e verifica che tutte le pagine rispondano 200
 ```
 
 ## 🤖 Telegram Bot

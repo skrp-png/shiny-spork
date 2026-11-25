@@ -1,11 +1,21 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { isValidTelegramSecret } from "../_shared/security.ts"
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN')
 const ALLOWED_TELEGRAM_ID = Deno.env.get('ALLOWED_TELEGRAM_ID')
+// Secret set with setWebhook(secret_token=...). Telegram sends it back on every update.
+const TELEGRAM_WEBHOOK_SECRET = Deno.env.get('TELEGRAM_WEBHOOK_SECRET')
 
 Deno.serve(async (req) => {
+    // This function is public (Telegram can't send a Supabase JWT), so the body
+    // (including message.from.id) can be forged. Verify the request really comes from Telegram.
+    if (!isValidTelegramSecret(req.headers.get('X-Telegram-Bot-Api-Secret-Token'), TELEGRAM_WEBHOOK_SECRET)) {
+        console.warn("Richiesta rifiutata: secret token Telegram mancante o errato.");
+        return new Response('unauthorized', { status: 401 })
+    }
+
     try {
         console.log("Richiesta ricevuta dal bot...");
 
