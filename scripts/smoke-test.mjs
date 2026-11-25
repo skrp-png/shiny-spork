@@ -23,7 +23,13 @@ function findRoutes(dir = "app", prefix = "") {
 
 const routes = [...findRoutes(), "/sitemap.xml", "/manifest.json", "/sw.js", "/robots.txt"];
 
-const server = spawn("npx", ["next", "start", "-p", PORT], { stdio: ["ignore", "pipe", "pipe"] });
+// Start next directly (not via npx) in its own process group, so stopping the group really
+// stops the server. With npx on Linux the next child survived and kept this script alive (CI hang).
+const nextBin = join("node_modules", "next", "dist", "bin", "next");
+const server = spawn(process.execPath, [nextBin, "start", "-p", PORT], {
+    stdio: ["ignore", "pipe", "pipe"],
+    detached: true,
+});
 let serverLog = "";
 server.stdout.on("data", (d) => (serverLog += d));
 server.stderr.on("data", (d) => (serverLog += d));
@@ -45,7 +51,7 @@ let failures = 0;
 try {
     await waitForServer();
     for (const route of routes) {
-        const res = await fetch(BASE + route);
+        const res = await fetch(BASE + route, { signal: AbortSignal.timeout(20000) });
         const body = await res.text();
         const crashed = /Application error|Internal Server Error/i.test(body);
         const ok = res.status === 200 && !crashed;
@@ -56,7 +62,11 @@ try {
     console.error(err.message);
     failures++;
 } finally {
-    server.kill();
+    try {
+        process.kill(-server.pid, "SIGTERM"); // the whole process group
+    } catch {
+        server.kill("SIGTERM");
+    }
 }
 
 if (failures) {
@@ -64,3 +74,4 @@ if (failures) {
     process.exit(1);
 }
 console.log(`\nSmoke test passed: ${routes.length} routes OK`);
+process.exit(0);
