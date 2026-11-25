@@ -71,7 +71,7 @@ export default function PreferenzePage() {
         <main className="min-h-screen bg-stone-50 dark:bg-[#1a1a1a] pb-24 md:max-w-md md:mx-auto md:shadow-2xl md:border-x md:border-stone-200 dark:md:border-stone-800 transition-colors duration-300">
             <SimpleHeader title="Impostazioni" />
 
-            <InstallGuide forceOpen={showInstallGuide} onClose={() => setShowInstallGuide(false)} />
+            <InstallGuide forceOpen={showInstallGuide} onClose={() => setShowInstallGuide(false)} autoOpen={false} />
 
             <div className="p-5 space-y-6">
 
